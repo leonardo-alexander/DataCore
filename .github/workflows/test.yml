@@ -22,14 +22,5 @@ jobs:
       - name: install dependencies
         run: composer install --no-progress --prefer-dist
 
-      - name: copy env
-        run: cp .env.example .env
-
-      - name: generate key
-        run: php artisan key:generate
-
       - name: run tests (pest)
-        env:
-          DB_CONNECTION: sqlite
-          DB_DATABASE: ":memory:"
         run: php artisan test
