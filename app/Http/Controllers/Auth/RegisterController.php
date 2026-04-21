@@ -3,17 +3,17 @@
 namespace App\Http\Controllers\Auth;
 
 use App\Http\Controllers\Controller;
-use Illuminate\Support\Facades\Auth;
+use App\Models\User;
 use Illuminate\Http\Request;
 
-class LoginController extends Controller
+class RegisterController extends Controller
 {
     /**
      * Display a listing of the resource.
      */
     public function index()
     {
-        return view("login");
+        return view("register");
     }
 
     /**
@@ -29,21 +29,19 @@ class LoginController extends Controller
      */
     public function store(Request $request)
     {
-        $credentials = $request->validate([
+        $validated = $request->validate([
             "email"=> "required|email",
-            "password"=> "required"
+            "password"=> "required",
+            "name"=> "required"
         ]);
 
-        if(Auth::attempt($credentials, $request->boolean('remember'))){
-            $request->session()->regenerate();
-            
-            return redirect()->intended('/')
-                ->with('success','Welcome Back!');
-        }
+        User::create([
+            "email"=> $validated["email"],
+            "password"=> bcrypt($validated["password"]),
+            "name"=> $validated["name"]
+        ]);
 
-        return back()
-            ->withErrors(['email'=> 'The provided credentials do not match our records'])
-            ->onlyInput('email');
+        return redirect()->route('login');
     }
 
     /**
@@ -73,11 +71,8 @@ class LoginController extends Controller
     /**
      * Remove the specified resource from storage.
      */
-    public function destroy(Request $request)
+    public function destroy(string $id)
     {
-        Auth::logout();
-
-        $request->session()->invalidate();
-        $request->session()->regenerateToken();
+        //
     }
 }
