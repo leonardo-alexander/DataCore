@@ -14,7 +14,7 @@ class RegisterController extends Controller
      */
     public function index()
     {
-        return view("register");
+        return view("auth.register");
     }
 
     /**
@@ -31,20 +31,22 @@ class RegisterController extends Controller
     public function store(Request $request)
     {
         $validated = $request->validate([
-            "email" => "required|email",
-            "password" => "required",
-            "name" => "required"
+            'name' => 'required|string|max:255',
+            'email' => 'required|email|unique:users,email',
+            'password' => 'required|min:6|confirmed',
         ], [
-            "email.required" => "Email is required.",
-            "email.email" => "Please enter a valid email address.",
-            "password.required" => "Password is required.",
-            "name.required" => "Name is required."
+            'name.required' => 'Name is required.',
+            'email.required' => 'Email is required.',
+            'email.email' => 'Enter a valid email.',
+            'email.unique' => 'Email already registered.',
+            'password.required' => 'Password is required.',
+            'password.confirmed' => 'Passwords do not match.',
         ]);
 
         User::create([
+            'name' => $validated['name'],
             'email' => $validated['email'],
             'password' => Hash::make($validated['password']),
-            'name' => $validated['name'],
         ]);
 
         return redirect()->route('login.view')
