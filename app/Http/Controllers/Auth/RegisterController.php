@@ -4,6 +4,7 @@ namespace App\Http\Controllers\Auth;
 
 use App\Http\Controllers\Controller;
 use App\Models\User;
+use App\Models\Wallet;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Hash;
 
@@ -41,11 +42,16 @@ class RegisterController extends Controller
             "name.required" => "Name is required."
         ]);
 
-        User::create([
+        $user = User::create([
             'email' => $validated['email'],
             'password' => Hash::make($validated['password']),
             'name' => $validated['name'],
         ]);
+
+        // Wallet::create([
+        //     'user_id'=> $user->id,
+        //     'balance' => 0,
+        // ]);
 
         return redirect()->route('login.view')
             ->with('success', 'Registration successful! Please log in.');
