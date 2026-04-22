@@ -36,9 +36,9 @@ class RegisterController extends Controller
         ]);
 
         User::create([
-            "email"=> $validated["email"],
-            "password"=> bcrypt($validated["password"]),
-            "name"=> $validated["name"]
+            "email" => "required|string|email|max:255|unique:users,email",
+            "password" => "required|string|min:8",
+            "name" => "required|string|max:255"
         ]);
 
         return redirect()->route('login');
