@@ -53,7 +53,7 @@
                     @csrf
 
                     <!-- Email -->
-                    <input type="email" name="email" placeholder="Email" required
+                    <input type="email" name="email" placeholder="Email" value="{{ old('email') }}" required
                         class="w-full px-4 py-3 rounded-lg bg-indigo-500/40 text-white placeholder-gray-200 focus:outline-none focus:ring-2 focus:ring-white">
 
                     <!-- Password -->
