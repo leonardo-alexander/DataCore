@@ -35,7 +35,7 @@ class WalletController extends Controller
                     $balance = $request->user()->wallet->balance;
 
                     if ($value > $balance) {
-                        $fail('Insufficient balance.')
+                        $fail('Insufficient balance.');
                     }
                 }
             ]
