@@ -3,7 +3,7 @@
 
 <head>
     <meta charset="UTF-8">
-    <title>Login - DataCore</title>
+    <title>Register - DataCore</title>
     @vite(['resources/css/app.css', 'resources/js/app.js'])
 </head>
 
@@ -14,13 +14,12 @@
         <!-- LEFT SIDE -->
         <div class="w-1/2 flex flex-col justify-center px-16 relative">
 
-            <!-- Title -->
             <div class="flex flex-col items-start gap-2">
-                <h1 class="text-5xl font-bold text-[#1E1B4B] leading-tight inline-block">
+                <h1 class="text-5xl font-bold text-[#1E1B4B] leading-tight">
                     Welcome to
                 </h1>
 
-                <img src="{{ asset('images/datacore-logo.png') }}" class="h-32 w-auto inline-block" alt="DataCore Logo">
+                <img src="{{ asset('images/datacore-logo.png') }}" class="h-32 w-auto" alt="DataCore Logo">
             </div>
 
             <p class="mt-8 text-gray-600 text-lg max-w-xl">
@@ -43,12 +42,16 @@
 
                 <!-- Title -->
                 <h2 class="text-3xl font-semibold text-white mb-6">
-                    Login
+                    Register
                 </h2>
 
                 <!-- Form -->
-                <form method="POST" action="{{ route('login.attempt') }}" class="space-y-4">
+                <form method="POST" action="{{ route('register.store') }}" class="space-y-4">
                     @csrf
+
+                    <!-- Name -->
+                    <input type="text" name="name" placeholder="Name" value="{{ old('name') }}" required
+                        class="w-full px-4 py-3 rounded-lg bg-accent/40 text-white placeholder-gray-200 focus:outline-none focus:ring-2 focus:ring-white">
 
                     <!-- Email -->
                     <input type="email" name="email" placeholder="Email" value="{{ old('email') }}" required
@@ -58,8 +61,13 @@
                     <input type="password" name="password" placeholder="Password" required
                         class="w-full px-4 py-3 rounded-lg bg-accent/40 text-white placeholder-gray-200 focus:outline-none focus:ring-2 focus:ring-white">
 
+                    <!-- Confirm Password -->
+                    <input type="password" name="password_confirmation" placeholder="Confirm Password" required
+                        class="w-full px-4 py-3 rounded-lg bg-accent/40 text-white placeholder-gray-200 focus:outline-none focus:ring-2 focus:ring-white">
+
+                    <!-- General error -->
                     @if ($errors->any())
-                        <div class="mb-4 text-red-200 bg-red-500/20 border border-red-300 rounded-lg px-4 py-3">
+                        <div class="text-red-200 bg-red-500/20 border border-red-300 rounded-lg px-4 py-3">
                             {{ $errors->first() }}
                         </div>
                     @endif
@@ -67,32 +75,17 @@
                     <!-- Button -->
                     <button type="submit"
                         class="w-full bg-white text-indigo-700 font-semibold py-3 rounded-lg hover:bg-gray-100 transition">
-                        Login
+                        Register
                     </button>
                 </form>
 
-                <!-- Register -->
+                <!-- Login link -->
                 <p class="text-sm text-gray-200 mt-4">
-                    Don't have an account yet?
-                    <a href="{{ route('register.view') }}" class="text-indigo-200 font-semibold">
-                        Register now
+                    Already have an account?
+                    <a href="{{ route('login.view') }}" class="text-indigo-200 font-semibold">
+                        Login now
                     </a>
                 </p>
-
-                {{-- <!-- Divider -->
-                <div class="flex items-center my-6">
-                    <div class="flex-1 h-px bg-gray-300"></div>
-                    <span class="px-3 text-gray-200 text-sm">or continue with</span>
-                    <div class="flex-1 h-px bg-gray-300"></div>
-                </div>
-
-                <!-- Social -->
-                <div class="flex justify-between">
-                    <button class="bg-white p-3 rounded-lg w-14">G</button>
-                    <button class="bg-white p-3 rounded-lg w-14"></button>
-                    <button class="bg-white p-3 rounded-lg w-14">f</button>
-                    <button class="bg-white p-3 rounded-lg w-14">t</button>
-                </div> --}}
 
             </div>
         </div>
