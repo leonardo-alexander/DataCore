@@ -31,9 +31,14 @@ class RegisterController extends Controller
     public function store(Request $request)
     {
         $validated = $request->validate([
-            "email"=> "required|email",
-            "password"=> "required",
-            "name"=> "required"
+            "email" => "required|email",
+            "password" => "required",
+            "name" => "required"
+        ], [
+            "email.required" => "Email is required.",
+            "email.email" => "Please enter a valid email address.",
+            "password.required" => "Password is required.",
+            "name.required" => "Name is required."
         ]);
 
         User::create([
@@ -42,7 +47,8 @@ class RegisterController extends Controller
             'name' => $validated['name'],
         ]);
 
-        return redirect()->route('login');
+        return redirect()->route('login.view')
+            ->with('success', 'Registration successful! Please log in.');
     }
 
     /**
