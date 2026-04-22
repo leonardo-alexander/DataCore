@@ -7,11 +7,11 @@
     @vite(['resources/css/app.css', 'resources/js/app.js'])
 </head>
 
-<body class="bg-[#EEF2FF]">
+<body class="bg-background">
 
     <div class="min-h-screen flex">
 
-        <!-- LEFT SIDE (same as login) -->
+        <!-- LEFT SIDE -->
         <div class="w-1/2 flex flex-col justify-center px-16 relative">
 
             <div class="flex flex-col items-start gap-2">
@@ -24,19 +24,19 @@
 
             <p class="mt-8 text-gray-600 text-lg max-w-xl">
                 your all in one platform to earn
-                <span class="text-indigo-500 font-semibold">rewards</span>
+                <span class="text-accent font-semibold">rewards</span>
                 through surveys and trade high quality
-                <span class="text-indigo-500 font-semibold">datasets</span> seamlessly.
+                <span class="text-accent font-semibold">datasets</span> seamlessly.
             </p>
 
             <div
-                class="absolute bottom-0 left-0 w-full h-32 bg-gradient-to-r from-indigo-200 to-purple-200 rounded-t-full opacity-30">
+                class="absolute bottom-0 left-0 w-full h-32 bg-linear-to-r from-indigo-200 to-purple-200 rounded-t-full opacity-30">
             </div>
 
         </div>
 
         <!-- RIGHT SIDE -->
-        <div class="w-1/2 bg-gradient-to-b from-indigo-600 to-indigo-800 flex items-center justify-center">
+        <div class="w-1/2 bg-linear-to-b from-primary to-primary-dark flex items-center justify-center">
 
             <div class="w-80">
 
@@ -51,19 +51,19 @@
 
                     <!-- Name -->
                     <input type="text" name="name" placeholder="Name" value="{{ old('name') }}" required
-                        class="w-full px-4 py-3 rounded-lg bg-indigo-500/40 text-white placeholder-gray-200 focus:outline-none focus:ring-2 focus:ring-white">
+                        class="w-full px-4 py-3 rounded-lg bg-accent/40 text-white placeholder-gray-200 focus:outline-none focus:ring-2 focus:ring-white">
 
                     <!-- Email -->
                     <input type="email" name="email" placeholder="Email" value="{{ old('email') }}" required
-                        class="w-full px-4 py-3 rounded-lg bg-indigo-500/40 text-white placeholder-gray-200 focus:outline-none focus:ring-2 focus:ring-white">
+                        class="w-full px-4 py-3 rounded-lg bg-accent/40 text-white placeholder-gray-200 focus:outline-none focus:ring-2 focus:ring-white">
 
                     <!-- Password -->
                     <input type="password" name="password" placeholder="Password" required
-                        class="w-full px-4 py-3 rounded-lg bg-indigo-500/40 text-white placeholder-gray-200 focus:outline-none focus:ring-2 focus:ring-white">
+                        class="w-full px-4 py-3 rounded-lg bg-accent/40 text-white placeholder-gray-200 focus:outline-none focus:ring-2 focus:ring-white">
 
                     <!-- Confirm Password -->
                     <input type="password" name="password_confirmation" placeholder="Confirm Password" required
-                        class="w-full px-4 py-3 rounded-lg bg-indigo-500/40 text-white placeholder-gray-200 focus:outline-none focus:ring-2 focus:ring-white">
+                        class="w-full px-4 py-3 rounded-lg bg-accent/40 text-white placeholder-gray-200 focus:outline-none focus:ring-2 focus:ring-white">
 
                     <!-- General error -->
                     @if ($errors->any())
