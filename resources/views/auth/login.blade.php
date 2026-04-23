@@ -1,13 +1,8 @@
-<!DOCTYPE html>
-<html lang="en">
+@extends('layouts.app')
 
-<head>
-    <meta charset="UTF-8">
-    <title>Login - DataCore</title>
-    @vite(['resources/css/app.css', 'resources/js/app.js'])
-</head>
+@section('title', 'Login - DataCore')
 
-<body class="bg-background">
+@section('content')
 
     <div class="min-h-screen flex">
 
@@ -99,6 +94,4 @@
 
     </div>
 
-</body>
-
-</html>
+@endsection
