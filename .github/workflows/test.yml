@@ -18,8 +18,10 @@ jobs:
         uses: shivammathur/setup-php@v2
         with:
           php-version: 8.3
-          extensions: mbstring, pdo, sqlite, pdo_mysql, bcmath, intl, fileinfo
-          coverage: none
+          extensions: mbstring, pdo, sqlite, pdo_mysql, bcmath, intl, fileinfo, zip, curl
+
+      - name: Install PHP dependencies
+        run: composer install --no-interaction --prefer-dist --optimize-autoloader --ignore-platform-reqs
 
       - name: Validate composer
         run: composer validate
