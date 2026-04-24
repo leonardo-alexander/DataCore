@@ -15,10 +15,10 @@ Route::get('/register', [RegisterController::class, 'index'])->name('register.vi
 Route::post('/register', [RegisterController::class, 'store'])->name('register.store');
 Route::get('/settings/profile', function () {
     return view('settings.profile');
-})->name('settings.profile');
+})->name('profile.view');
 Route::get('/settings/security', function () {
     return view('settings.security');
-})->name('settings.security');
+})->name('security.view');
 Route::get('/settings/activity', function () {
     return view('settings.activity');
-})->name('settings.activity');
+})->name('activity.view');
