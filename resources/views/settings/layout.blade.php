@@ -18,36 +18,35 @@
 
             <!-- Tabs -->
             <div class="flex gap-6 border-b border-white/20 mb-8 text-sm">
-
-                <a href="{{ route('settings.profile') }}"
+                <a href="{{ route('profile.view') }}"
                     class="pb-3 relative transition
-                    {{ request()->routeIs('settings.profile') ? 'text-white font-medium' : 'text-white/60 hover:text-white' }}">
+                    {{ request()->routeIs('profile.view') ? 'text-white font-medium' : 'text-white/60 hover:text-white' }}">
 
                     Profile
 
-                    @if (request()->routeIs('settings.profile'))
+                    @if (request()->routeIs('profile.view'))
                         <span class="absolute left-0 bottom-0 w-full h-0.5 bg-white rounded"></span>
                     @endif
                 </a>
 
-                <a href="{{ route('settings.security') }}"
+                <a href="{{ route('security.view') }}"
                     class="pb-3 relative transition
-                    {{ request()->routeIs('settings.security') ? 'text-white font-medium' : 'text-white/60 hover:text-white' }}">
+                    {{ request()->routeIs('security.view') ? 'text-white font-medium' : 'text-white/60 hover:text-white' }}">
 
                     Security
 
-                    @if (request()->routeIs('settings.security'))
+                    @if (request()->routeIs('security.view'))
                         <span class="absolute left-0 bottom-0 w-full h-0.5 bg-white rounded"></span>
                     @endif
                 </a>
 
-                <a href="{{ route('settings.activity') }}"
+                <a href="{{ route('activity.view') }}"
                     class="pb-3 relative transition
-                    {{ request()->routeIs('settings.activity') ? 'text-white font-medium' : 'text-white/60 hover:text-white' }}">
+                    {{ request()->routeIs('activity.view') ? 'text-white font-medium' : 'text-white/60 hover:text-white' }}">
 
                     Activity
 
-                    @if (request()->routeIs('settings.activity'))
+                    @if (request()->routeIs('activity.view'))
                         <span class="absolute left-0 bottom-0 w-full h-0.5 bg-white rounded"></span>
                     @endif
                 </a>
