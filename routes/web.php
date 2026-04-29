@@ -3,11 +3,13 @@
 use App\Http\Controllers\Auth\LoginController;
 use App\Http\Controllers\Auth\RegisterController;
 use Illuminate\Support\Facades\Route;
+use App\Http\Controllers\ProfileController;
 
 Route::get('/', function () {
     return view('welcome');
 });
 
+Route::get('/profile', [ProfileController::class, 'index'])->name('profile.view');
 Route::get('/login', [LoginController::class, 'index'])->name('login.view');
 Route::post('/login', [LoginController::class, 'store'])->name('login.attempt');
 Route::post('/logout', [LoginController::class, 'destroy'])->name('logout');
