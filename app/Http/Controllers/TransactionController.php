@@ -4,6 +4,7 @@ namespace App\Http\Controllers;
 
 use App\Models\Transaction;
 use App\Models\Wallet;
+use App\Models\Collection;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
 
@@ -39,49 +40,49 @@ class TransactionController extends Controller
         ]);
     }
 
-    // public function purchase(Request $request)
-    // {
-    //     $request->validate([
-    //         'collection_id' => 'required|exists:collections,id'
-    //     ]);
+    public function purchase(Request $request)
+    {
+        $request->validate([
+            'collection_id' => 'required|exists:collections,id'
+        ]);
 
-    //     DB::transaction(function () use ($request){
-    //         $buyer = $request->user();
-    //         $collection = Collection::findOrFail($request->collection_id);
+        DB::transaction(function () use ($request){
+            $buyer = $request->user();
+            $collection = Collection::findOrFail($request->collection_id);
 
-    //         $price = $collection->price;
-    //         $sellerId = $collection->user_id;
+            $price = $collection->price;
+            $sellerId = $collection->user_id;
 
-    //         $buyerWallet = $buyer->wallet()->lockForUpdate()->first();
+            $buyerWallet = $buyer->wallet()->lockForUpdate()->first();
 
-    //         if ($buyerWallet->balance < $price) {
-    //             abort(422, 'Insufficient balance');
-    //         }
+            if ($buyerWallet->balance < $price) {
+                abort(422, 'Insufficient balance');
+            }
 
-    //         $buyerWallet->balance -= $price;
-    //         $buyerWallet->save();
+            $buyerWallet->balance -= $price;
+            $buyerWallet->save();
 
-    //         $sellerWallet = Wallet::where('user_id', $sellerId)
-    //             ->lockForUpdate()
-    //             ->first();
+            $sellerWallet = Wallet::where('user_id', $sellerId)
+                ->lockForUpdate()
+                ->first();
 
-    //         $sellerAmount = $price * 0.9;
+            $sellerAmount = $price * 0.9;
 
-    //         $sellerWallet->balance += $sellerAmount;
-    //         $sellerWallet->save();
+            $sellerWallet->balance += $sellerAmount;
+            $sellerWallet->save();
 
-    //         Transaction::create([
-    //             'user_id' => $buyer->id,
-    //             'type' => 'payment',
-    //             'direction' => 'debit',
-    //             'amount' => $price,
-    //             'status' => 'success'
-    //         ]);
-    //     });
-    //     return response()->json([
-    //         'message' =>'Purchase success'
-    //     ]);
-    // }
+            Transaction::create([
+                'user_id' => $buyer->id,
+                'type' => 'payment',
+                'direction' => 'debit',
+                'amount' => $price,
+                'status' => 'success'
+            ]);
+        });
+        return response()->json([
+            'message' =>'Purchase success'
+        ]);
+    }
 
     public function reward(Request $request)
     {
