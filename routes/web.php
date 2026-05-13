@@ -18,7 +18,6 @@ Route::post('/register', [RegisterController::class, 'store'])->name('register.s
 Route::get('/settings/profile', function () {
     return view('settings.profile');
 })->name('profile.view');
-})->name('profile.view');
 Route::get('/settings/security', function () {
     return view('settings.security');
 })->name('security.view');
