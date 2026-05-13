@@ -6,8 +6,12 @@
 <div class="d-flex">
     @include('components.sidebar')
 
-    <div class="flex-grow-1 p-4" style="margin-left: 250px; background: linear-gradient(135deg, #5b4bff, #7b6cff); min-height: 100vh;">
-        
+    <div class="flex-grow-1 p-4 text-white"
+        style="
+            margin-left: 250px;
+            min-height: 100vh;
+            background: linear-gradient(to bottom, #4536C5, #584FA7, #211A5F);
+        ">
         <div class="container mt-3">
             <h2 class="text-white mb-4">Fill Survey</h2>
 

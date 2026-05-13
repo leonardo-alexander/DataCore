@@ -9,10 +9,12 @@
     @include('components.sidebar')
 
     <!-- Main Content -->
-    <div class="flex-grow-1 p-4"
-         style="margin-left: 250px; min-height:100vh;
-         background: linear-gradient(135deg, #5b4bff, #2e1f8f);">
-
+    <div class="flex-grow-1 p-4 text-white"
+        style="
+            margin-left: 250px;
+            min-height: 100vh;
+            background: linear-gradient(to bottom, #4536C5, #584FA7, #211A5F);
+        ">
         <!-- Header -->
         <div class="d-flex justify-content-between align-items-center mb-4 text-white">
             <h2 class="fw-bold">Choose The Survey</h2>
@@ -36,7 +38,7 @@
 
             @for ($i = 0; $i < 8; $i++)
             <div class="col-md-3">
-                <div class="card border-0 shadow-sm rounded-4 overflow-hidden">
+                <div class="card border-0 shadow-sm rounded-4 overflow-hidden survey-card">
 
                     <!-- Image -->
                     <img src="https://images.unsplash.com/photo-1551288049-bebda4e38f71"
@@ -72,5 +74,17 @@
         </div>
 
     </div>
-</div>
+</div>''
+<style>
+.survey-card {
+    transition: all 0.3s ease;
+    cursor: pointer;
+}
+
+.survey-card:hover {
+    transform: translateY(-8px) scale(1.02);
+    box-shadow: 0 20px 40px rgba(0,0,0,0.15);
+}
+</style>
+
 @endsection

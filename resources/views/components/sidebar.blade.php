@@ -10,11 +10,15 @@
 
         <!-- DASHBOARD -->
         <div class="px-4 mb-6">
-            <a href="#"
-                class="flex items-center gap-3 px-3 py-2.5 rounded-xl bg-primary text-white font-medium shadow-sm">
-                <x-heroicon-o-squares-2x2 class="w-5 h-5" />
-                Dashboard
-            </a>
+        <a href="{{ route('dashboard') }}"
+            class="flex items-center gap-3 px-3 py-2.5 rounded-xl transition
+            {{ request()->routeIs('dashboard') 
+                ? 'bg-primary text-white font-medium shadow-sm' 
+                : 'text-gray-600 hover:bg-gray-100' }}">
+                
+            <x-heroicon-o-squares-2x2 class="w-5 h-5" />
+            Dashboard
+        </a>
         </div>
 
         <!-- NAV -->
@@ -50,9 +54,11 @@
                 </p>
 
                 <div class="space-y-1">
-
-                    <a href="choose-survey"
-                        class="flex items-center gap-3 px-3 py-2.5 rounded-xl text-gray-600 hover:bg-gray-100 transition">
+                    <a href="{{ route('choose-survey') }}"
+                        class="flex items-center gap-3 px-3 py-2.5 rounded-xl transition
+                        {{ request()->routeIs('choose-survey') 
+                            ? 'bg-primary text-white font-medium shadow-sm' 
+                            : 'text-gray-600 hover:bg-gray-100' }}">
                         <x-heroicon-o-magnifying-glass class="w-5 h-5" />
                         Browse Surveys
                     </a>

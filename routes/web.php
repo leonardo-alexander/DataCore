@@ -6,7 +6,7 @@ use Illuminate\Support\Facades\Route;
 
 Route::get('/', function () {
     return view('welcome');
-});
+})->name('dashboard');
 
 Route::get('/login', [LoginController::class, 'index'])->name('login.view');
 Route::post('/login', [LoginController::class, 'store'])->name('login.attempt');
@@ -25,7 +25,7 @@ Route::get('/settings/activity', function () {
 
 Route::get('/choose-survey', function () {
     return view('survey.choose-survey');
-});
+})->name('choose-survey');
 
 Route::get('/fill-survey', function () {
     return view('survey.fill-survey');
@@ -34,5 +34,20 @@ Route::get('/fill-survey', function () {
 Route::get('/history-survey', function () {
     return view('survey.history-survey');
 });
+
+Route::get('/dashboard-monetize', function () {
+    return view('monetize.dashboard-monetize');
+});
+
+Route::get('/category-health', function () {
+    return view('monetize.category-health');
+});
+
+
+
+
+
+
+
 
 

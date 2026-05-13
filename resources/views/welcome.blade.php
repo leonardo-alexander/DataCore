@@ -5,150 +5,153 @@
 @section('content')
 <div class="d-flex">
 
-    <!-- Sidebar -->
     @include('components.sidebar')
 
     <!-- Main Content -->
-    <div class="flex-grow-1 p-4" style="margin-left: 250px; background: linear-gradient(135deg, #5b4bff, #2e1f8f); min-height: 100vh;">
+    <div class="flex-grow-1 p-4 text-white"
+        style="
+            margin-left: 250px;
+            min-height: 100vh;
+            background: linear-gradient(to bottom, #4536C5, #584FA7, #211A5F);
+        ">
 
-        <!-- Header -->
-        <div class="d-flex justify-content-between align-items-center mb-4 text-white">
+        <!-- TOP -->
+        <div class="d-flex justify-content-between align-items-center mb-4">
+
             <div>
-                <h5>Hi Nyoney,</h5>
-                <h3>Welcome to DataCore!</h3>
+                <small class="opacity-75">Hi Nyong,</small>
+                <h3 class="fw-bold mb-0">Welcome to DataCore!</h3>
             </div>
 
-            <input type="text" class="form-control w-25" placeholder="Search...">
+            <input type="text"
+                class="form-control rounded-pill px-3"
+                placeholder="Search"
+                style="width: 250px;">
         </div>
 
-        <!-- Stats -->
+        <!-- STAT CARDS -->
         <div class="row g-3 mb-4">
+
+            @foreach([
+                ['title' => 'Total Data Set', 'value' => '56'],
+                ['title' => 'Active Contributor', 'value' => '102'],
+                ['title' => 'Active Workflow', 'value' => '3'],
+                ['title' => 'Revenue', 'value' => 'Rp100.000'],
+            ] as $item)
+
             <div class="col-md-3">
-                <div class="card shadow-sm border-0">
-                    <div class="card-body">
-                        <p class="text-muted mb-1">Total Dataset</p>
-                        <h4>56</h4>
-                    </div>
+                <div class="p-3 rounded-4 h-100 stat-card">
+                    <small class="text-muted">{{ $item['title'] }}</small>
+                    <h5 class="fw-bold mb-0 text-dark">{{ $item['value'] }}</h5>
                 </div>
             </div>
 
-            <div class="col-md-3">
-                <div class="card shadow-sm border-0">
-                    <div class="card-body">
-                        <p class="text-muted mb-1">Active Contributor</p>
-                        <h4>102</h4>
-                    </div>
-                </div>
-            </div>
+            @endforeach
 
-            <div class="col-md-3">
-                <div class="card shadow-sm border-0">
-                    <div class="card-body">
-                        <p class="text-muted mb-1">Active Workflow</p>
-                        <h4>3</h4>
-                    </div>
-                </div>
-            </div>
-
-            <div class="col-md-3">
-                <div class="card text-white border-0" style="background: linear-gradient(135deg, #7b6cff, #a18bff);">
-                    <div class="card-body">
-                        <p class="mb-1">Revenue</p>
-                        <h4>Rp100.000</h4>
-                    </div>
-                </div>
-            </div>
         </div>
 
-        <!-- Chart + Activity -->
+        <!-- ROW 2 -->
         <div class="row g-3 mb-4">
+
+            <!-- Balance -->
             <div class="col-md-8">
-                <div class="card shadow-sm border-0">
-                    <div class="card-body">
-                        <h6>Balance</h6>
-                        <p class="text-success">On track</p>
+                <div class="p-4 rounded-4 stat-card h-100">
 
-                        <!-- Dummy Chart -->
-                        <div style="height:150px; background:#f5f5f5; border-radius:10px;"></div>
+                    <div class="d-flex justify-content-between">
+                        <h5 class="mb-0 text-dark">Balance</h5>
+                        <span class="badge bg-success">On track</span>
                     </div>
+
+                    <div class="row mt-3">
+                        <div class="col">
+                            <small class="text-muted">Credits Earned</small>
+                            <h4 class="fw-bold text-dark">230</h4>
+                        </div>
+                        <div class="col">
+                            <small class="text-muted">Credit Used</small>
+                            <h4 class="fw-bold text-dark">220</h4>
+                        </div>
+                    </div>
+
+                    <!-- fake chart -->
+                    <div class="mt-4" style="height: 80px; background: #eee; border-radius: 10px;"></div>
+
                 </div>
             </div>
 
+            <!-- Activity -->
             <div class="col-md-4">
-                <div class="card shadow-sm border-0">
-                    <div class="card-body">
-                        <h6>Recent Activity</h6>
+                <div class="p-4 rounded-4 stat-card h-100">
 
-                        <ul class="list-group list-group-flush">
-                            <li class="list-group-item d-flex justify-content-between">
-                                Submitted Dataset
-                                <span class="text-danger">-3</span>
-                            </li>
-                            <li class="list-group-item d-flex justify-content-between">
-                                Purchased Dataset
-                                <span class="text-success">+40</span>
-                            </li>
-                            <li class="list-group-item d-flex justify-content-between">
-                                Training Dataset
-                                <span class="text-success">+12</span>
-                            </li>
-                        </ul>
+                    <h5 class="text-dark">Recent Activity</h5>
+
+                    <div class="mt-3 small">
+
+                        <div class="d-flex justify-content-between mb-3">
+                            <div>
+                                <strong class="text-dark">Submitted Dataset</strong><br>
+                                <span class="text-muted">Today</span>
+                            </div>
+                            <span class="text-success">+2</span>
+                        </div>
+
+                        <div class="d-flex justify-content-between mb-3">
+                            <div>
+                                <strong class="text-dark">Purchased Dataset</strong><br>
+                                <span class="text-muted">Today</span>
+                            </div>
+                            <span class="text-danger">-2</span>
+                        </div>
 
                     </div>
+
                 </div>
             </div>
+
         </div>
 
-        <!-- Bottom Section -->
+        <!-- ROW 3 -->
         <div class="row g-3">
 
-            <!-- Balance Card -->
             <div class="col-md-4">
-                <div class="card text-white border-0" style="background: linear-gradient(135deg, #a18bff, #7b6cff);">
-                    <div class="card-body">
-                        <h6>Your Balance</h6>
-                        <h3>10</h3>
-
-                        <ul class="mt-3 small">
-                            <li>Survey Reward +10</li>
-                            <li>Purchase Dataset -40</li>
-                            <li>Dataset Approval +40</li>
-                        </ul>
-                    </div>
+                <div class="p-4 rounded-4 stat-card h-100">
+                    <small class="text-muted">Credit Balance</small>
+                    <h3 class="fw-bold text-dark">10</h3>
                 </div>
             </div>
 
-            <!-- Active Surveys -->
             <div class="col-md-8">
-                <div class="card shadow-sm border-0">
-                    <div class="card-body">
-                        <h6 class="mb-3">Active Surveys</h6>
+                <div class="p-4 rounded-4 stat-card h-100">
 
-                        <div class="row g-3">
-                            <div class="col-md-6">
-                                <div class="card border-0 shadow-sm">
-                                    <img src="https://via.placeholder.com/300x150" class="card-img-top">
-                                    <div class="card-body">
-                                        <h6>Professional Gadget General Survey</h6>
-                                        <p class="small text-muted">Reward 50 Point</p>
-                                        <button class="btn btn-primary btn-sm">Ikuti Survei</button>
-                                    </div>
+                    <div class="d-flex justify-content-between mb-3">
+                        <h5 class="text-dark">Active Surveys</h5>
+                        <small class="text-muted">230 Credits</small>
+                    </div>
+
+                    <div class="row g-3">
+
+                        <div class="col-md-6">
+                            <div class="card border-0 shadow-sm">
+                                <img src="{{ asset('images/datacore-logo.png') }}" class="card-img-top">
+                                <div class="card-body">
+                                    <h6>Survey Gadget</h6>
+                                    <button class="btn btn-primary btn-sm">Klik</button>
                                 </div>
                             </div>
+                        </div>
 
-                            <div class="col-md-6">
-                                <div class="card border-0 shadow-sm">
-                                    <img src="https://via.placeholder.com/300x150" class="card-img-top">
-                                    <div class="card-body">
-                                        <h6>Professional Gadget General Survey</h6>
-                                        <p class="small text-muted">Reward 50 Point</p>
-                                        <button class="btn btn-primary btn-sm">Ikuti Survei</button>
-                                    </div>
+                        <div class="col-md-6">
+                            <div class="card border-0 shadow-sm">
+                                <img src="{{ asset('images/datacore-logo.png') }}" class="card-img-top">
+                                <div class="card-body">
+                                    <h6>Survey Gadget</h6>
+                                    <button class="btn btn-primary btn-sm">Klik</button>
                                 </div>
                             </div>
                         </div>
 
                     </div>
+
                 </div>
             </div>
 
@@ -156,4 +159,20 @@
 
     </div>
 </div>
+
+<!-- STYLE -->
+<style>
+.stat-card {
+    background: #ffffff; 
+    border-radius: 20px;
+    padding: 20px;
+    box-shadow: 0 10px 25px rgba(0,0,0,0.08);
+    transition: 0.3s;
+}
+
+.stat-card:hover {
+    transform: translateY(-5px);
+}
+</style>
+
 @endsection
