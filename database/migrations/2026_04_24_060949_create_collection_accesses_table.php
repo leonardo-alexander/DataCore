@@ -11,10 +11,11 @@ return new class extends Migration
      */
     public function up(): void
     {
-        Schema::create('wallets', function (Blueprint $table) {
+        Schema::create('collection_accesses', function (Blueprint $table) {
             $table->id();
-            $table->foreignId('user_id')->nullable()->constrained()->cascadeOnDelete();
-            $table->integer('balance');
+            $table->foreignId('user_id')->constrained()->onDelete('cascade');
+            $table->foreignId('collection_id')->constrained()->onDelete('cascade');
+            // $table->foreignId('transaction_id')->nullable()->constrained()->onDelete('set null');
             $table->timestamps();
         });
     }
@@ -24,6 +25,6 @@ return new class extends Migration
      */
     public function down(): void
     {
-        Schema::dropIfExists('wallets');
+        Schema::dropIfExists('collection_accesses');
     }
 };
