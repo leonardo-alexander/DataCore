@@ -27,11 +27,12 @@ use Illuminate\Support\Facades\Route;
 
 Route::get('/', [HomeController::class, 'root'])->name('home');
 
-Route::get('/_ini_check', fn () => response()->json([
-    'upload_max_filesize' => ini_get('upload_max_filesize'),
-    'post_max_size' => ini_get('post_max_size'),
-    'memory_limit' => ini_get('memory_limit'),
-]));
+// Google OAuth: kept outside the {locale} prefix since the redirect URI
+// registered with Google must be a fixed, static URL.
+Route::middleware('guest')->group(function () {
+    Route::get('auth/google', [AuthController::class, 'redirectToGoogle'])->name('auth.google');
+    Route::get('auth/google/callback', [AuthController::class, 'handleGoogleCallback'])->name('auth.google.callback');
+});
 
 Route::prefix('{locale}')
     ->where(['locale' => 'en|id'])
