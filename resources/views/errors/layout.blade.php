@@ -7,7 +7,6 @@
     <title>@yield('code') · DataCore</title>
     <link rel="icon" type="image/svg+xml" href="/datacore-logo.svg">
 
-    @fonts
     @vite(['resources/css/app.css', 'resources/js/app.js'])
 </head>
 

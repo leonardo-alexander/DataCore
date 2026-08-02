@@ -1,23 +1,66 @@
 # DataCore — Data Refinery Marketplace
 
-A Laravel 13 application: collect survey responses or import CSVs, refine them through a
+A Laravel 12 application: collect survey responses or import CSVs, refine them through a
 two-step cleaning pipeline (**Clean 1 free, Clean 2 paid**), and sell the results in a
 marketplace. Wallet, escrowed survey rewards, identity verification, admin console, and
 English/Indonesian localisation are all included.
 
 ---
 
-## Stack
+## Tech stack
 
-| Layer      | Choice                                            |
-| ---------- | ------------------------------------------------- |
-| Backend    | Laravel 13, PHP 8.4                               |
-| Frontend   | Blade + Alpine.js + Lucide icons                  |
-| Styling    | Tailwind CSS 4 via Vite (build step required)     |
-| Database   | PostgreSQL in production, MySQL/SQLite locally    |
-| Auth       | Session auth + Google OAuth (Socialite)           |
-| Payments   | Simulated wallet top-ups (no provider required)   |
-| Deployment | Docker → Render                                   |
+### Backend
+
+| Package                     | Version  | Role                                              |
+| --------------------------- | -------- | ------------------------------------------------- |
+| PHP                         | 8.4      | Runtime (`composer.lock` pins ≥ 8.4.1)            |
+| `laravel/framework`         | ^12.0    | MVC framework, Eloquent ORM, queues, validation    |
+| `laravel/socialite`         | ^5.29    | Google OAuth sign-in                               |
+| `laravel/tinker`            | ^2.10    | REPL for poking at models                          |
+
+### Frontend
+
+| Package                     | Version  | Role                                              |
+| --------------------------- | -------- | ------------------------------------------------- |
+| Blade                       | —        | Server-rendered templating                         |
+| `tailwindcss`               | ^4.0     | Utility-first CSS                                  |
+| `@tailwindcss/vite`         | ^4.0     | Tailwind's Vite plugin (no PostCSS config needed)  |
+| `vite`                      | ^8.0     | Asset bundler and dev server                       |
+| `laravel-vite-plugin`       | ^3.1     | Manifest wiring between Vite and Blade             |
+| `alpinejs`                  | ^3.15    | Client-side interactivity (dropdowns, modals)      |
+| `@alpinejs/collapse`        | ^3.15    | Accordion transitions                              |
+| `lucide`                    | ^1.23    | Icon set                                           |
+| `@fontsource/*`             | latest   | Self-hosted Inter, Space Grotesk, JetBrains Mono   |
+
+Fonts are imported at the top of `resources/css/app.css` and bundled into `public/build` by
+Vite, so there is no runtime call to a font CDN. The families are wired to Tailwind through
+`--font-sans`, `--font-display` and `--font-mono` in the `@theme` block of the same file.
+
+### Data & infrastructure
+
+| Piece                       | Choice                                            |
+| --------------------------- | ------------------------------------------------- |
+| Database (development)      | **MySQL 8**                                       |
+| Database (production)       | **PostgreSQL 16** on Render                       |
+| Sessions / cache / queue    | Database-backed (no Redis needed)                 |
+| File storage                | Local disk (`storage/app`)                        |
+| Web server                  | Apache 2.4 + mod_php, opcache enabled             |
+| Container                   | Multi-stage Docker: `node:22` → `composer:2` → `php:8.4-apache` |
+| PHP extensions              | `pdo_mysql`, `pdo_pgsql`, `opcache`, `zip`, `intl` |
+| Hosting                     | Render (Docker web service + managed Postgres)    |
+
+### Tooling & external services
+
+| Piece                       | Role                                              |
+| --------------------------- | ------------------------------------------------- |
+| `pestphp/pest` ^4.7         | Test runner                                       |
+| `laravel/pint` ^1.27        | Code style                                        |
+| `laravel/pail` ^1.2         | Live log tailing in development                    |
+| `nunomaduro/collision`      | Readable CLI error output                          |
+| `fakerphp/faker`            | Seed data generation                               |
+| `concurrently`              | Runs server + queue + Vite from one command        |
+| Cleaning pipeline           | External FastAPI service (`CLEANING_API_URL`)      |
+| Wallet top-ups              | Simulated in-app — no payment provider             |
 
 ---
 
@@ -27,18 +70,18 @@ English/Indonesian localisation are all included.
 app/
   Models/            User, Profile, Wallet, PaymentMethod, Category, Collection,
                      Question, Entry, Review, Activity, Verification, Transaction, Purchase
-  Services/          CleaningService (CSV → FastAPI), WalletService (atomic credit/debit/settle)
+  Services/          CleaningService (CSV → FastAPI), WalletService (atomic credit/debit)
   Http/Requests/     one Form Request per write endpoint — all validation lives here
   Http/Middleware/   SetLocale, EnsureUserIsAdmin, EnsureCanRespondToSurvey,
                      PreventBackHistoryCache
   Http/Controllers/  thin controllers; business rules live in services and models
 config/
-  datacore.php       cleaning URL, fees, rewards, top-up limits, payment gateway
+  datacore.php       cleaning URL, fees, rewards, top-up limits, seeded admin
 database/
-  migrations/        24 migrations (portable across SQLite / MySQL / PostgreSQL)
+  migrations/        28 migrations, schema-builder only — run on MySQL and PostgreSQL alike
   seeders/           DatabaseSeeder (guarded) → DemoSeeder + AdminSeeder
 lang/
-  id.json            413 keys — full Indonesian coverage of every __() string
+  id.json            408 keys — full Indonesian coverage of every __() string
 resources/views/
   errors/            custom 403 / 404 / 419 / 429 / 500 / 503 pages
 docker/
@@ -49,7 +92,45 @@ docker/
 
 ---
 
+## Two databases: MySQL locally, PostgreSQL in production
+
+This project deliberately runs on **MySQL during development** and **PostgreSQL once
+deployed**. Render's free tier offers managed Postgres but no MySQL, while MySQL is what
+Herd/XAMPP/Laragon give you out of the box locally — so rather than fight either, the app
+is written to run on both.
+
+That works because nothing is tied to a specific engine:
+
+- All schema changes go through Laravel's **schema builder**, never raw `CREATE TABLE`.
+- All queries go through **Eloquent / the query builder**, so identifiers and placeholders
+  are quoted per-driver.
+- The one query that genuinely differs between engines — grouping entries by calendar day
+  for the analytics chart — is isolated in `Collection::entriesPerDay()`, which picks the
+  right expression per driver (`date_format` on MySQL, `to_char` on Postgres,
+  `strftime` on SQLite).
+
+**If you add a raw query, put it behind a method that branches on
+`getConnection()->getDriverName()`,** the same way `entriesPerDay()` does — otherwise it
+will pass locally and 500 in production.
+
+> Worth knowing: Postgres is stricter than MySQL. It rejects `GROUP BY` columns that aren't
+> aggregated or grouped, and it is case-sensitive about quoted identifiers. If something
+> works locally but breaks on Render, a raw SQL string is the first place to look.
+
+---
+
 ## Local development
+
+**1 — Create the MySQL database and user.** Matching the defaults in `.env.example`:
+
+```sql
+CREATE DATABASE datacore_db CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci;
+CREATE USER 'datacore_admin'@'localhost' IDENTIFIED BY '';
+GRANT ALL PRIVILEGES ON datacore_db.* TO 'datacore_admin'@'localhost';
+FLUSH PRIVILEGES;
+```
+
+**2 — Install and boot.**
 
 ```bash
 composer install
@@ -63,6 +144,44 @@ composer dev          # serve + queue worker + vite, all at once
 
 `composer dev` runs `php artisan serve`, `queue:listen`, and `npm run dev` together.
 
+The relevant `.env` block, already set in `.env.example`:
+
+```env
+DB_CONNECTION=mysql
+DB_HOST=127.0.0.1
+DB_PORT=3306
+DB_DATABASE=datacore_db
+DB_USERNAME=datacore_admin
+DB_PASSWORD=
+```
+
+### Optional: test against Postgres before deploying
+
+Worth doing once if you touch queries or migrations, since production is Postgres:
+
+```bash
+docker run -d --name dc-pg -p 5432:5432 \
+  -e POSTGRES_USER=datacore -e POSTGRES_PASSWORD=secret -e POSTGRES_DB=datacore \
+  postgres:16-alpine
+```
+
+Then point `.env` at it and re-run the migrations:
+
+```env
+DB_CONNECTION=pgsql
+DB_HOST=127.0.0.1
+DB_PORT=5432
+DB_DATABASE=datacore
+DB_USERNAME=datacore
+DB_PASSWORD=secret
+```
+
+```bash
+php artisan migrate:fresh --seed
+```
+
+`php artisan db:show` confirms which engine you are actually connected to.
+
 ### Seeded logins
 
 | Account | Email                  | Password   |
@@ -72,6 +191,10 @@ composer dev          # serve + queue worker + vite, all at once
 | Admin   | `admin@datacore.test`  | `password` |
 
 Override the admin with `ADMIN_EMAIL` / `ADMIN_NAME` / `ADMIN_PASSWORD` in `.env`.
+
+> The `password` default for the admin applies **only outside production**. In production,
+> if `ADMIN_PASSWORD` is unset, `AdminSeeder` generates a random one and prints it in the
+> deploy log rather than shipping a guessable admin account.
 
 ---
 
@@ -84,10 +207,18 @@ web service plus a free PostgreSQL instance — comes up from one file.
 
 In Render: **New → Blueprint**, point it at the repo. It reads `render.yaml` and creates:
 
-- `datacore-db` — free PostgreSQL
-- `datacore` — Docker web service, health check on `/up`
+- `datacore-db` — free PostgreSQL 16, region `singapore`
+- `datacore` — Docker web service, same region, health check on `/up`
 
 `APP_KEY` is generated automatically and `DB_URL` is wired from the database.
+
+**The engine switch happens entirely through environment variables** — no code or migration
+changes. The blueprint sets `DB_CONNECTION=pgsql` and injects `DB_URL` from the managed
+database, overriding the `mysql` defaults you use locally. Your local `.env` is never
+deployed (it is in both `.gitignore` and `.dockerignore`).
+
+Both services must stay in the **same region**: Render's internal connection string only
+works within a region, so a mismatch means the app can never reach the database.
 
 ### 2. Set the values marked `sync: false`
 
