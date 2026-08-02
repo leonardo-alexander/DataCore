@@ -23,4 +23,10 @@ return [
     // IDR per 1 USD, used to display amounts when the user's currency is USD
     'usd_rate' => (float) env('DATACORE_USD_RATE', 16000),
 
+    'admin' => [
+        'name'     => env('ADMIN_NAME', 'Admin'),
+        'email'    => env('ADMIN_EMAIL', 'admin@datacore.test'),
+        'password' => env('ADMIN_PASSWORD', 'password'),
+    ],
+
 ];

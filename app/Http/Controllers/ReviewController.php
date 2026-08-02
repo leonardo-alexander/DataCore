@@ -2,45 +2,42 @@
 
 namespace App\Http\Controllers;
 
+use App\Http\Requests\StoreReviewRequest;
 use App\Models\Activity;
 use App\Models\Collection;
 use App\Models\Review;
-use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
 
 class ReviewController extends Controller
 {
-    public function store(string $locale, Request $request, Collection $collection)
+    public function store(string $locale, StoreReviewRequest $request, Collection $collection)
     {
-        $user = Auth::user();
-
-        abort_unless($collection->purchasedBy($user), 403);
-
-        $data = $request->validate([
-            'rating' => ['required', 'integer', 'min:1', 'max:5'],
-            'comment' => ['nullable', 'string', 'max:1000'],
-        ]);
+        $data = $request->validated();
 
         $review = Review::updateOrCreate(
-            ['collection_id' => $collection->id, 'user_id' => $user->id],
+            ['collection_id' => $collection->id, 'user_id' => Auth::id()],
             ['rating' => $data['rating'], 'comment' => $data['comment'] ?? null],
         );
 
-        Activity::log($collection->user_id, 'review', 'New review', $collection->title . ' received a ' . $data['rating'] . '-star review.');
+        Activity::log(
+            $collection->user_id,
+            'review',
+            __('New review'),
+            __(':title received a :rating-star review.', ['title' => $collection->title, 'rating' => $data['rating']]),
+        );
 
-        $message = $review->wasRecentlyCreated ? 'Thanks for your review!' : 'Review updated successfully!';
-        return back()->with('success', $message);
+        return back()->with('success', $review->wasRecentlyCreated
+            ? __('Thanks for your review!')
+            : __('Review updated successfully!'));
     }
 
-    public function delete(string $locale, Collection $collection){
-        $user = Auth::user();
+    public function delete(string $locale, Collection $collection)
+    {
+        Review::where('collection_id', $collection->id)
+            ->where('user_id', Auth::id())
+            ->firstOrFail()
+            ->delete();
 
-        $review = Review::where('collection_id', $collection->id)
-            ->where('user_id', $user->id)
-            ->firstOrFail();
-
-        $review->delete();
-
-        return back()->with('success', 'Review deleted!');
+        return back()->with('success', __('Review deleted!'));
     }
 }

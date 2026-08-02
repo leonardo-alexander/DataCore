@@ -3,6 +3,8 @@
 namespace App\Http\Controllers\Auth;
 
 use App\Http\Controllers\Controller;
+use App\Http\Requests\Auth\LoginRequest;
+use App\Http\Requests\Auth\RegisterRequest;
 use App\Models\Activity;
 use App\Models\Profile;
 use App\Models\User;
@@ -15,30 +17,26 @@ use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Hash;
 use Illuminate\Support\Str;
-use Illuminate\Validation\Rules\Password;
 use Laravel\Socialite\Facades\Socialite;
 use Throwable;
 
 class AuthController extends Controller
 {
+    private const WELCOME_BONUS = 50000;
+
     public function viewRegister()
     {
         return view('auth.register');
     }
 
-    public function register(Request $request, WalletService $wallet)
+    public function register(RegisterRequest $request, WalletService $wallet)
     {
-        $data = $request->validate([
-            'name' => ['required', 'string', 'max:255'],
-            'email' => ['required', 'email', 'max:255', 'unique:users,email'],
-            'password' => ['required', 'confirmed', Password::min(8)],
-            'terms' => ['accepted'],
-        ]);
+        $data = $request->validated();
 
         $user = DB::transaction(function () use ($data) {
             $user = User::create([
-                'name' => $data['name'],
-                'email' => $data['email'],
+                'name'     => $data['name'],
+                'email'    => $data['email'],
                 'password' => $data['password'],
             ]);
 
@@ -52,7 +50,7 @@ class AuthController extends Controller
 
         $this->grantWelcomeBonus($user, $wallet);
 
-        return redirect()->route('dashboard')->with('success', 'Welcome to DataCore, ' . $user->name . '! We dropped ' . Money::format(50000) . ' in your wallet to get you started.');
+        return redirect()->route('dashboard')->with('success', $this->welcomeMessage($user));
     }
 
     public function viewLogin()
@@ -60,22 +58,17 @@ class AuthController extends Controller
         return view('auth.login');
     }
 
-    public function login(Request $request)
+    public function login(LoginRequest $request)
     {
-        $credentials = $request->validate([
-            'email' => ['required', 'email'],
-            'password' => ['required'],
-        ]);
-
-        if (! Auth::attempt($credentials, $request->boolean('remember'))) {
+        if (! Auth::attempt($request->credentials(), $request->boolean('remember'))) {
             return back()
                 ->withInput($request->only('email'))
-                ->with('error', 'Those credentials do not match our records.');
+                ->with('error', __('Those credentials do not match our records.'));
         }
 
         $request->session()->regenerate();
 
-        return redirect()->intended(route('dashboard'))->with('success', 'Welcome back!');
+        return redirect()->intended(route('dashboard'))->with('success', __('Welcome back!'));
     }
 
     public function logout(Request $request)
@@ -84,7 +77,7 @@ class AuthController extends Controller
         $request->session()->invalidate();
         $request->session()->regenerateToken();
 
-        return redirect()->route('login')->with('success', 'You have been signed out.');
+        return redirect()->route('login')->with('success', __('You have been signed out.'));
     }
 
     public function redirectToGoogle()
@@ -96,8 +89,8 @@ class AuthController extends Controller
     {
         try {
             $googleUser = Socialite::driver('google')->user();
-        } catch (Throwable $e) {
-            return redirect()->route('login')->with('error', 'Google sign-in failed. Please try again.');
+        } catch (Throwable) {
+            return redirect()->route('login')->with('error', __('Google sign-in failed. Please try again.'));
         }
 
         $user = User::where('google_id', $googleUser->getId())->first();
@@ -107,17 +100,16 @@ class AuthController extends Controller
             $user = User::where('email', $googleUser->getEmail())->first();
 
             if ($user) {
-                // Existing email/password account signing in with Google for the first time: link it.
                 $user->update(['google_id' => $googleUser->getId()]);
             } else {
                 $isNewAccount = true;
 
                 $user = DB::transaction(function () use ($googleUser) {
                     $user = User::create([
-                        'name' => $googleUser->getName() ?: $googleUser->getNickname() ?: 'DataCore User',
-                        'email' => $googleUser->getEmail(),
-                        'google_id' => $googleUser->getId(),
-                        'password' => Hash::make(Str::random(40)),
+                        'name'              => $googleUser->getName() ?: $googleUser->getNickname() ?: 'DataCore User',
+                        'email'             => $googleUser->getEmail(),
+                        'google_id'         => $googleUser->getId(),
+                        'password'          => Hash::make(Str::random(40)),
                         'email_verified_at' => now(),
                     ]);
 
@@ -134,28 +126,39 @@ class AuthController extends Controller
         if ($isNewAccount) {
             $this->grantWelcomeBonus($user, $wallet);
 
-            return redirect()->route('dashboard')->with('success', 'Welcome to DataCore, ' . $user->name . '! We dropped ' . Money::format(50000) . ' in your wallet to get you started.');
+            return redirect()->route('dashboard')->with('success', $this->welcomeMessage($user));
         }
 
-        return redirect()->intended(route('dashboard'))->with('success', 'Welcome back!');
+        return redirect()->intended(route('dashboard'))->with('success', __('Welcome back!'));
     }
 
-    /**
-     * Shared setup for a brand-new account, regardless of how it was created.
-     */
     private function setUpNewAccount(User $user, ?string $avatarUrl = null): void
     {
         Profile::create(['user_id' => $user->id, 'picture_url' => $avatarUrl]);
         Wallet::create(['user_id' => $user->id, 'balance' => 0]);
         Verification::create(['user_id' => $user->id, 'status' => 'unverified']);
-        Activity::log($user->id, 'system', 'Welcome to DataCore', 'Your account is ready. Verify your identity to start selling.');
+
+        Activity::log(
+            $user->id,
+            'system',
+            __('Welcome to DataCore'),
+            __('Your account is ready. Verify your identity to start selling.'),
+        );
     }
 
     private function grantWelcomeBonus(User $user, WalletService $wallet): void
     {
-        $wallet->credit($user, 50000, 'reward', [
-            'description' => 'Welcome bonus',
-            'activity' => 'You received a ' . Money::format(50000) . ' welcome bonus',
+        $wallet->credit($user, self::WELCOME_BONUS, 'reward', [
+            'description' => __('Welcome bonus'),
+            'activity'    => __('You received a :amount welcome bonus', ['amount' => Money::format(self::WELCOME_BONUS)]),
+        ]);
+    }
+
+    private function welcomeMessage(User $user): string
+    {
+        return __('Welcome to DataCore, :name! We dropped :amount in your wallet to get you started.', [
+            'name'   => $user->name,
+            'amount' => Money::format(self::WELCOME_BONUS),
         ]);
     }
 }

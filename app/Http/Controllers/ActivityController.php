@@ -8,8 +8,11 @@ class ActivityController extends Controller
 {
     public function read()
     {
-        Auth::user()->activities()->where('is_read', false)->update(['is_read' => true]);
+        /** @var \App\Models\User $user */
+        $user = Auth::user();
 
-        return back()->with('success', 'Notifications marked as read.');
+        $user->activities()->where('is_read', false)->update(['is_read' => true]);
+
+        return back()->with('success', __('Notifications marked as read.'));
     }
 }

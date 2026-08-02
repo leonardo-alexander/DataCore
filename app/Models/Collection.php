@@ -182,6 +182,31 @@ class Collection extends Model
         return round((float) $this->reviews()->avg('rating'), 1);
     }
 
+    public function entriesPerDay(int $days = 30): array
+    {
+        $column = match ($this->getConnection()->getDriverName()) {
+            'pgsql'  => "to_char(created_at, 'YYYY-MM-DD')",
+            'sqlite' => "strftime('%Y-%m-%d', created_at)",
+            'sqlsrv' => "convert(varchar(10), created_at, 23)",
+            default  => "date_format(created_at, '%Y-%m-%d')",
+        };
+
+        $counts = $this->entries()
+            ->where('created_at', '>=', now()->subDays($days - 1)->startOfDay())
+            ->selectRaw("{$column} as day, count(*) as total")
+            ->groupBy('day')
+            ->pluck('total', 'day');
+
+        $series = [];
+
+        for ($i = $days - 1; $i >= 0; $i--) {
+            $date          = now()->subDays($i)->format('Y-m-d');
+            $series[$date] = (int) ($counts[$date] ?? 0);
+        }
+
+        return $series;
+    }
+
     public function purchasedBy(?User $user): bool
     {
         if (! $user) {

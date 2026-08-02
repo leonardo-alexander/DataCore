@@ -2,22 +2,21 @@
 
 namespace App\Http\Controllers;
 
-use Illuminate\Http\Request;
+use App\Http\Requests\UpdateLanguageRequest;
 
 class LanguageController extends Controller
 {
-    public function update(Request $request)
+    public function update(UpdateLanguageRequest $request)
     {
-        $data = $request->validate([
-            'locale' => ['required', 'in:en,id'],
-        ]);
+        $locale = $request->validated('locale');
 
-        session(['locale' => $data['locale']]);
+        session(['locale' => $locale]);
 
-        $path     = parse_url(url()->previous(), PHP_URL_PATH) ?? '/';
-        $segments = explode('/', ltrim($path, '/'));
-        $segments[0] = $data['locale'];
-        $redirect = '/' . implode('/', $segments);
+        $segments = collect(explode('/', ltrim((string) parse_url(url()->previous(), PHP_URL_PATH), '/')))
+            ->whenEmpty(fn ($segments) => $segments->push($locale))
+            ->replace([0 => $locale]);
+
+        $redirect = '/' . $segments->implode('/');
 
         if ($request->expectsJson()) {
             return response()->json(['redirect' => $redirect]);

@@ -345,21 +345,21 @@
         <div class="mt-8 rounded-2xl border border-dashed border-slate-300 bg-white py-16 text-center">
             <i data-lucide="{{ $tab === 'purchased' ? 'shopping-bag' : 'layers' }}" class="mx-auto h-8 w-8 text-slate-300"></i>
             <p class="mt-3 font-display font-medium text-slate-600">
-                @if ($search) No results for "{{ $search }}"
-                @elseif ($tab === 'purchased') No purchased datasets yet
-                @else No collections yet
+                @if ($search) {{ __('No results for ":search"', ['search' => $search]) }}
+                @elseif ($tab === 'purchased') {{ __('No purchased datasets yet') }}
+                @else {{ __('No collections yet') }}
                 @endif
             </p>
             <p class="text-sm text-slate-400">
-                @if ($search) Try a different search term.
-                @elseif ($tab === 'purchased') Browse the <a href="{{ route('marketplace.index') }}" class="text-indigo-600 hover:underline">marketplace</a> to find datasets.
-                @else Create your first collection to start gathering data.
+                @if ($search) {{ __('Try a different search term.') }}
+                @elseif ($tab === 'purchased') {!! __('Browse the :link to find datasets.', ['link' => '<a href="' . route('marketplace.index') . '" class="text-indigo-600 hover:underline">' . __('marketplace') . '</a>']) !!}
+                @else {{ __('Create your first collection to start gathering data.') }}
                 @endif
             </p>
             @if (!$search && $tab !== 'purchased')
                 <a href="{{ route('collections.create') }}"
                     class="dc-spectrum mt-5 inline-flex items-center gap-2 rounded-xl px-4 py-2.5 text-sm font-semibold text-white shadow-glow transition hover:brightness-110">
-                    <i data-lucide="plus" class="h-4 w-4"></i> New collection
+                    <i data-lucide="plus" class="h-4 w-4"></i> {{ __('New collection') }}
                 </a>
             @endif
         </div>

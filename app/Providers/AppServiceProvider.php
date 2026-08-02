@@ -19,29 +19,42 @@ class AppServiceProvider extends ServiceProvider
     public function boot(): void
     {
         // Rate limiters for sensitive actions
-        RateLimiter::for('login', fn ($request) =>
-            Limit::perMinute(5)->by($request->ip())->response(fn () =>
+        RateLimiter::for(
+            'login',
+            fn($request) =>
+            Limit::perMinute(5)->by($request->ip())->response(
+                fn() =>
                 back()->withErrors(['email' => 'Too many login attempts. Please wait a minute and try again.'])->withInput()
             )
         );
 
-        RateLimiter::for('register', fn ($request) =>
+        RateLimiter::for(
+            'register',
+            fn($request) =>
             Limit::perMinute(3)->by($request->ip())
         );
 
-        RateLimiter::for('wallet', fn ($request) =>
+        RateLimiter::for(
+            'wallet',
+            fn($request) =>
             Limit::perMinute(10)->by($request->user()?->id ?? $request->ip())
         );
 
-        RateLimiter::for('entry', fn ($request) =>
+        RateLimiter::for(
+            'entry',
+            fn($request) =>
             Limit::perMinute(20)->by($request->user()?->id ?? $request->ip())
         );
 
-        RateLimiter::for('verification', fn ($request) =>
+        RateLimiter::for(
+            'verification',
+            fn($request) =>
             Limit::perMinute(3)->by($request->user()?->id ?? $request->ip())
         );
 
-        RateLimiter::for('import', fn ($request) =>
+        RateLimiter::for(
+            'import',
+            fn($request) =>
             Limit::perMinute(5)->by($request->user()?->id ?? $request->ip())
         );
 

@@ -3,10 +3,10 @@
 namespace App\Http\Controllers;
 
 use App\Exceptions\InsufficientBalanceException;
-use App\Models\Activity;
 use App\Models\Collection;
 use App\Models\Purchase;
 use App\Services\WalletService;
+use App\Support\Money;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\DB;
 
@@ -14,7 +14,10 @@ class PurchaseController extends Controller
 {
     public function index()
     {
-        $purchases = Auth::user()->purchases()
+        /** @var \App\Models\User $user */
+        $user = Auth::user();
+
+        $purchases = $user->purchases()
             ->with(['collection.user', 'collection.category'])
             ->latest()
             ->get();
@@ -26,14 +29,15 @@ class PurchaseController extends Controller
     {
         abort_unless($collection->status === 'published', 404);
 
+        /** @var \App\Models\User $user */
         $user = Auth::user();
 
         if ($collection->user_id === $user->id) {
-            return back()->with('error', 'You cannot purchase your own dataset.');
+            return back()->with('error', __('You cannot purchase your own dataset.'));
         }
 
         if ($collection->purchasedBy($user)) {
-            return back()->with('error', 'You already own this dataset.');
+            return back()->with('error', __('You already own this dataset.'));
         }
 
         $price = (int) $collection->price;
@@ -43,28 +47,32 @@ class PurchaseController extends Controller
                 if ($price > 0) {
                     $wallet->debit($user, $price, 'payment', [
                         'collection_id' => $collection->id,
-                        'description' => 'Purchased '.$collection->title,
-                        'activity' => 'You purchased '.$collection->title,
+                        'description'   => __('Purchased :title', ['title' => $collection->title]),
+                        'activity'      => __('You purchased :title', ['title' => $collection->title]),
                     ]);
 
                     $wallet->credit($collection->user, $price, 'payment', [
                         'collection_id' => $collection->id,
-                        'description' => 'Sale of '.$collection->title,
-                        'activity' => 'You sold '.$collection->title.' for '.\App\Support\Money::format($price, $collection->user),
+                        'description'   => __('Sale of :title', ['title' => $collection->title]),
+                        'activity'      => __('You sold :title for :amount', [
+                            'title'  => $collection->title,
+                            'amount' => Money::format($price, $collection->user),
+                        ]),
                     ]);
                 }
 
                 Purchase::create([
                     'collection_id' => $collection->id,
-                    'user_id' => $user->id,
-                    'amount' => $price,
+                    'user_id'       => $user->id,
+                    'amount'        => $price,
                 ]);
             });
-        } catch (InsufficientBalanceException $e) {
-            return redirect()->route('wallet.index')->with('error', $e->getMessage());
+        } catch (InsufficientBalanceException) {
+            return redirect()->route('wallet.index')
+                ->with('error', __('You do not have enough balance for this purchase. Top up and try again.'));
         }
 
         return redirect()->route('marketplace.show', $collection)
-            ->with('success', 'Purchase complete. You now have full access to "'.$collection->title.'".');
+            ->with('success', __('Purchase complete. You now have full access to ":title".', ['title' => $collection->title]));
     }
 }

@@ -2,6 +2,7 @@
 
 namespace App\Http\Controllers;
 
+use App\Http\Requests\RejectVerificationRequest;
 use App\Models\Activity;
 use App\Models\Collection;
 use App\Models\User;
@@ -49,23 +50,28 @@ class AdminController extends Controller
     {
         $user->verification()->updateOrCreate([], ['status' => 'verified', 'note' => null]);
 
-        Activity::log($user->id, 'system', 'Account verified', 'An admin approved your verification. You can now sell datasets.');
+        Activity::log(
+            $user->id,
+            'system',
+            __('Account verified'),
+            __('An admin approved your verification. You can now sell datasets.'),
+        );
 
-        return back()->with('success', $user->name . ' has been verified.');
+        return back()->with('success', __(':name has been verified.', ['name' => $user->name]));
     }
 
-    public function reject(string $locale, Request $request, User $user)
+    public function reject(string $locale, RejectVerificationRequest $request, User $user)
     {
-        $data = $request->validate(['note' => ['nullable', 'string', 'max:255']]);
+        $note = $request->note();
 
         $user->verification()->updateOrCreate([], [
             'status' => 'rejected',
-            'note' => $data['note'] ?? 'Your documents could not be verified. Please re-submit.',
+            'note'   => $note,
         ]);
 
-        Activity::log($user->id, 'system', 'Verification rejected', $data['note'] ?? 'Please re-submit your verification documents.');
+        Activity::log($user->id, 'system', __('Verification rejected'), $note);
 
-        return back()->with('success', $user->name . "'s verification was rejected.");
+        return back()->with('success', __("The verification for :name was rejected.", ['name' => $user->name]));
     }
 
     private function monthlySignups(): array

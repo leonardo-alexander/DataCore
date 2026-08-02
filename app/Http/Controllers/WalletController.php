@@ -3,8 +3,10 @@
 namespace App\Http\Controllers;
 
 use App\Exceptions\InsufficientBalanceException;
+use App\Http\Requests\TopupRequest;
+use App\Http\Requests\WithdrawRequest;
 use App\Services\WalletService;
-use Illuminate\Http\Request;
+use App\Support\Money;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Str;
 
@@ -15,27 +17,23 @@ class WalletController extends Controller
         /** @var \App\Models\User $user */
         $user = Auth::user();
 
-        $earned = (int) $user->transactions()->where('direction', 'credit')->where('status', 'success')->where('type', '!=', 'topup')->sum('amount');
-        $spent = (int) $user->transactions()->where('direction', 'debit')->where('status', 'success')->where('type', '!=', 'withdraw')->sum('amount');
+        $earned = (int) $user->transactions()
+            ->where('direction', 'credit')->where('status', 'success')->where('type', '!=', 'topup')->sum('amount');
 
-        $transactions = $user->transactions()->latest()->take(6)->get();
+        $spent = (int) $user->transactions()
+            ->where('direction', 'debit')->where('status', 'success')->where('type', '!=', 'withdraw')->sum('amount');
 
         return view('wallet.index', [
             'balance'      => $user->balance(),
             'earned'       => $earned,
             'spent'        => $spent,
-            'transactions' => $transactions,
+            'transactions' => $user->transactions()->latest()->take(6)->get(),
         ]);
     }
 
-    public function topup(Request $request)
+    public function topup(TopupRequest $request)
     {
-        $data = $request->validate([
-            'amount'            => ['required', 'integer', 'min:'.config('datacore.min_topup'), 'max:'.config('datacore.max_topup')],
-            'method'            => ['required', 'string'],
-            'payment_method_id' => ['nullable', 'exists:payment_methods,id'],
-        ]);
-
+        $data   = $request->validated();
         $amount = (int) $data['amount'];
         $method = $data['method'];
         $ref    = 'DC-' . strtoupper(Str::random(8));
@@ -73,17 +71,19 @@ class WalletController extends Controller
         $instruction = session()->pull('topup_instruction');
 
         if (! $instruction) {
-            return redirect()->route('wallet.index')->with('error', 'No pending payment found.');
+            return redirect()->route('wallet.index')->with('error', __('No pending payment found.'));
         }
 
-        $wallet->credit(Auth::user(), (int) $instruction['amount'], 'topup', [
+        $amount = (int) $instruction['amount'];
+
+        $wallet->credit(Auth::user(), $amount, 'topup', [
             'payment_method_id' => $instruction['payment_method_id'] ?? null,
-            'description'       => 'Top-up via ' . $instruction['method'],
-            'activity'          => 'Wallet topped up with ' . \App\Support\Money::format($instruction['amount']),
+            'description'       => __('Top-up via :method', ['method' => $instruction['method']]),
+            'activity'          => __('Wallet topped up with :amount', ['amount' => Money::format($amount)]),
         ]);
 
         return redirect()->route('wallet.index')
-            ->with('success', \App\Support\Money::format($instruction['amount']) . ' added to your wallet.');
+            ->with('success', __(':amount added to your wallet.', ['amount' => Money::format($amount)]));
     }
 
     public function cancel()
@@ -93,37 +93,25 @@ class WalletController extends Controller
         return redirect()->route('wallet.index');
     }
 
-    public function withdraw(Request $request, WalletService $wallet)
+    public function withdraw(WithdrawRequest $request, WalletService $wallet)
     {
         /** @var \App\Models\User $user */
-        $user    = Auth::user();
-        $balance = $user->balance();
-        $min     = config('datacore.min_withdrawal');
-
-        $data = $request->validate([
-            'amount'         => ['required', 'integer', 'min:' . $min, 'max:' . max($balance, 1)],
-            'bank_name'      => ['required', 'string', 'max:100'],
-            'account_number' => ['required', 'string', 'max:50'],
-            'account_name'   => ['required', 'string', 'max:100'],
-        ], [
-            'amount.max' => 'The withdrawal amount exceeds your available balance.',
-            'amount.min' => 'Minimum withdrawal is ' . \App\Support\Money::format($min) . '.',
-        ]);
-
+        $user   = Auth::user();
+        $data   = $request->validated();
         $amount = (int) $data['amount'];
 
         try {
             $wallet->debit($user, $amount, 'withdraw', [
-                'description' => 'Withdrawal to ' . $data['bank_name'] . ' · ' . $data['account_number'],
+                'description' => __('Withdrawal to :bank · :account', ['bank' => $data['bank_name'], 'account' => $data['account_number']]),
                 'status'      => 'processing',
-                'activity'    => 'Withdrawal of ' . \App\Support\Money::format($amount) . ' requested to ' . $data['bank_name'],
+                'activity'    => __('Withdrawal of :amount requested to :bank', ['amount' => Money::format($amount), 'bank' => $data['bank_name']]),
             ]);
         } catch (InsufficientBalanceException) {
-            return back()->with('error', 'Insufficient balance.')->withInput();
+            return back()->with('error', __('Insufficient balance.'))->withInput();
         }
 
-        return back()->with('success',
-            'Withdrawal of ' . \App\Support\Money::format($amount) . ' is being processed. Funds will arrive in 1–3 business days.'
-        );
+        return back()->with('success', __('Withdrawal of :amount is being processed. Funds will arrive in 1–3 business days.', [
+            'amount' => Money::format($amount),
+        ]));
     }
 }

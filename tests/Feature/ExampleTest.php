@@ -1,7 +1,9 @@
 <?php
 
-test('the application returns a successful response', function () {
-    $response = $this->get('/');
+test('the root path redirects to the default locale', function () {
+    $this->get('/')->assertRedirect('/' . config('app.locale'));
+});
 
-    $response->assertStatus(200);
+test('guests reaching a locale root are sent to the login page', function () {
+    $this->get('/en')->assertRedirect(route('login', ['locale' => 'en']));
 });

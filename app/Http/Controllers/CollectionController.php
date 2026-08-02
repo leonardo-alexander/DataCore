@@ -9,6 +9,7 @@ use App\Models\Collection;
 use App\Models\Question;
 use App\Models\User;
 use App\Services\WalletService;
+use App\Support\Money;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\DB;
@@ -108,8 +109,11 @@ class CollectionController extends Controller
             if ($budget > 0) {
                 $this->wallet->debit($user, $budget, 'escrow', [
                     'collection_id' => $collection->id,
-                    'description'   => 'Survey reward pool: ' . $collection->title,
-                    'activity'      => \App\Support\Money::format($budget) . ' held as reward pool for "' . $collection->title . '"',
+                    'description'   => __('Survey reward pool: :title', ['title' => $collection->title]),
+                    'activity'      => __(':amount held as reward pool for ":title"', [
+                        'amount' => Money::format($budget),
+                        'title'  => $collection->title,
+                    ]),
                 ]);
                 $collection->update(['reward_budget' => $budget]);
             }
@@ -117,9 +121,15 @@ class CollectionController extends Controller
             return $collection;
         });
 
-        Activity::log(Auth::id(), 'collection', 'Collection created', $collection->title . ' is now ' . $collection->status . '.');
+        Activity::log(
+            Auth::id(),
+            'collection',
+            __('Collection created'),
+            __(':title is now :status.', ['title' => $collection->title, 'status' => $collection->status]),
+        );
 
-        return redirect()->route('collections.index')->with('success', '"' . $collection->title . '" was created successfully.');
+        return redirect()->route('collections.index')
+            ->with('success', __('":title" was created successfully.', ['title' => $collection->title]));
     }
 
     public function edit(string $locale, Collection $collection)
@@ -161,7 +171,7 @@ class CollectionController extends Controller
 
         if ($data['status'] === 'published' && $collection->cleanState() === 'raw') {
             return back()
-                ->withErrors(['status' => 'Clean 1 must be completed before this collection can be published.'])
+                ->withErrors(['status' => __('Clean 1 must be completed before this collection can be published.')])
                 ->withInput();
         }
 
@@ -187,8 +197,11 @@ class CollectionController extends Controller
                 if ($budget > 0) {
                     $this->wallet->debit($user, $budget, 'escrow', [
                         'collection_id' => $collection->id,
-                        'description'   => 'Survey reward pool: ' . $collection->title,
-                        'activity'      => \App\Support\Money::format($budget) . ' held as reward pool for "' . $collection->title . '"',
+                        'description'   => __('Survey reward pool: :title', ['title' => $collection->title]),
+                        'activity'      => __(':amount held as reward pool for ":title"', [
+                            'amount' => Money::format($budget),
+                            'title'  => $collection->title,
+                        ]),
                     ]);
                     // New collecting round: clear the previous run's end marker so it can be ended again
                     $collection->update(['reward_budget' => $budget, 'survey_ended_at' => null]);
@@ -204,8 +217,11 @@ class CollectionController extends Controller
                 if ($refund > 0) {
                     $this->wallet->credit($user, $refund, 'escrow_refund', [
                         'collection_id' => $collection->id,
-                        'description'   => 'Unused reward pool refund: ' . $collection->title,
-                        'activity'      => \App\Support\Money::format($refund) . ' refunded from "' . $collection->title . '" reward pool',
+                        'description'   => __('Unused reward pool refund: :title', ['title' => $collection->title]),
+                        'activity'      => __(':amount refunded from ":title" reward pool', [
+                            'amount' => Money::format($refund),
+                            'title'  => $collection->title,
+                        ]),
                     ]);
                 }
 
@@ -228,7 +244,8 @@ class CollectionController extends Controller
             $this->syncQuestions($collection, $data['questions'] ?? []);
         });
 
-        return redirect()->route('collections.index')->with('success', '"' . $collection->title . '" was updated.');
+        return redirect()->route('collections.index')
+            ->with('success', __('":title" was updated.', ['title' => $collection->title]));
     }
 
     public function destroy(string $locale, Collection $collection)
@@ -246,8 +263,11 @@ class CollectionController extends Controller
                 if ($refund > 0) {
                     $this->wallet->credit($user, $refund, 'escrow_refund', [
                         'collection_id' => $collection->id,
-                        'description'   => 'Reward pool refund: ' . $collection->title . ' (deleted)',
-                        'activity'      => \App\Support\Money::format($refund) . ' refunded after deleting "' . $collection->title . '"',
+                        'description'   => __('Reward pool refund: :title (deleted)', ['title' => $collection->title]),
+                        'activity'      => __(':amount refunded after deleting ":title"', [
+                            'amount' => Money::format($refund),
+                            'title'  => $collection->title,
+                        ]),
                     ]);
                 }
             }
@@ -255,7 +275,8 @@ class CollectionController extends Controller
             $collection->delete();
         });
 
-        return redirect()->route('collections.index')->with('success', '"' . $collection->title . '" was deleted.');
+        return redirect()->route('collections.index')
+            ->with('success', __('":title" was deleted.', ['title' => $collection->title]));
     }
 
     public function analytics(string $locale, Collection $collection)
@@ -270,18 +291,7 @@ class CollectionController extends Controller
         $withClean1 = $collection->entries()->whereNotNull('clean1_data')->whereNull('clean2_data')->count();
         $withRaw    = $totalEntries - $withClean2 - $withClean1;
 
-        $entriesByDay = $collection->entries()
-            ->where('created_at', '>=', now()->subDays(29)->startOfDay())
-            ->selectRaw('DATE(created_at) as date, COUNT(*) as cnt')
-            ->groupBy('date')
-            ->orderBy('date')
-            ->pluck('cnt', 'date');
-
-        $dailyData = [];
-        for ($i = 29; $i >= 0; $i--) {
-            $date             = now()->subDays($i)->format('Y-m-d');
-            $dailyData[$date] = (int) ($entriesByDay[$date] ?? 0);
-        }
+        $dailyData = $collection->entriesPerDay(30);
 
         return view('collections.analytics', [
             'collection'     => $collection,

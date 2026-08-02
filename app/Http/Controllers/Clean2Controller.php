@@ -7,7 +7,9 @@ use App\Models\Collection;
 use App\Models\User;
 use App\Services\CleaningService;
 use App\Services\WalletService;
+use App\Support\Money;
 use Illuminate\Support\Facades\Auth;
+use Illuminate\Support\Facades\Log;
 use Throwable;
 
 class Clean2Controller extends Controller
@@ -17,13 +19,13 @@ class Clean2Controller extends Controller
         abort_unless($collection->user_id === Auth::id(), 403);
 
         if ($collection->cleanState() === 'raw') {
-            return back()->with('error', 'Run Clean 1 first before applying Clean 2.');
+            return back()->with('error', __('Run Clean 1 first before applying Clean 2.'));
         }
 
         $count = $collection->entries()->count();
 
         if ($count === 0) {
-            return back()->with('error', 'This collection has no entries to refine yet.');
+            return back()->with('error', __('This collection has no entries to refine yet.'));
         }
 
         /** @var User $user */
@@ -32,25 +34,31 @@ class Clean2Controller extends Controller
 
         if ($user->balance() < $fee) {
             return redirect()->route('wallet.index')
-                ->with('error', 'Clean 2 costs ' . \App\Support\Money::format($fee) . '. Please top up your wallet first.');
+                ->with('error', __('Clean 2 costs :amount. Please top up your wallet first.', ['amount' => Money::format($fee)]));
         }
 
         if ($count > config('datacore.cleaning_sync_limit')) {
             ProcessCleaning::dispatch($collection, $user, 'clean2');
-            return back()->with('success', 'Large dataset. Clean 2 is running in the background. ' . \App\Support\Money::format($fee) . ' will be charged once done.');
+
+            return back()->with('success', __('Large dataset. Clean 2 is running in the background. :amount will be charged once done.', [
+                'amount' => Money::format($fee),
+            ]));
         }
 
         try {
             $payload = $cleaning->process($collection, 'clean2');
             $cleaning->apply($collection, $payload, 'clean2');
+
             $wallet->debit($user, $fee, 'payment', [
                 'collection_id' => $collection->id,
-                'description'   => 'Clean 2 premium refine: ' . $collection->title,
+                'description'   => __('Clean 2 premium refine: :title', ['title' => $collection->title]),
             ]);
         } catch (Throwable $e) {
-            return back()->with('error', 'Clean 2 failed: ' . $e->getMessage());
+            Log::error('Clean 2 failed', ['collection_id' => $collection->id, 'error' => $e->getMessage()]);
+
+            return back()->with('error', __('Clean 2 could not be completed. Please try again in a moment.'));
         }
 
-        return back()->with('success', 'Clean 2 complete! ' . \App\Support\Money::format($fee) . ' charged.');
+        return back()->with('success', __('Clean 2 complete! :amount charged.', ['amount' => Money::format($fee)]));
     }
 }

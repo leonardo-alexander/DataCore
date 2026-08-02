@@ -2,35 +2,35 @@
 
 namespace App\Http\Controllers;
 
+use App\Http\Requests\StorePaymentMethodRequest;
 use App\Models\PaymentMethod;
-use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
 
 class PaymentMethodController extends Controller
 {
-    public function store(Request $request)
+    public function store(StorePaymentMethodRequest $request)
     {
-        $data = $request->validate([
-            'type' => ['required', 'in:bank,ewallet,card'],
-            'name' => ['required', 'string', 'max:255'],
-            'account' => ['required', 'string', 'max:255'],
-        ]);
+        $data = $request->validated();
 
-        Auth::user()->paymentMethods()->create([
-            'type' => $data['type'],
-            'name' => $data['name'],
-            'details' => ['account' => $data['account']],
+        /** @var \App\Models\User $user */
+        $user = Auth::user();
+
+        $user->paymentMethods()->create([
+            'type'      => $data['type'],
+            'name'      => $data['name'],
+            'details'   => ['account' => $data['account']],
             'is_active' => true,
         ]);
 
-        return back()->with('success', 'Payment method added.');
+        return back()->with('success', __('Payment method added.'));
     }
 
     public function destroy(string $locale, PaymentMethod $paymentMethod)
     {
         abort_unless($paymentMethod->user_id === Auth::id(), 403);
+
         $paymentMethod->delete();
 
-        return back()->with('success', 'Payment method removed.');
+        return back()->with('success', __('Payment method removed.'));
     }
 }

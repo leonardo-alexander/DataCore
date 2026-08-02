@@ -22,6 +22,7 @@ use App\Http\Controllers\TransactionController;
 use App\Http\Controllers\UploadController;
 use App\Http\Controllers\VerificationController;
 use App\Http\Controllers\WalletController;
+use App\Http\Middleware\EnsureCanRespondToSurvey;
 use App\Http\Middleware\PreventBackHistoryCache;
 use Illuminate\Support\Facades\Route;
 
@@ -35,7 +36,7 @@ Route::middleware('guest')->group(function () {
 });
 
 Route::prefix('{locale}')
-    ->where(['locale' => 'en|id'])
+    ->where(['locale' => implode('|', config('app.supported_locales'))])
     ->group(function () {
 
         Route::get('/', HomeController::class)->name('locale.home');
@@ -96,10 +97,13 @@ Route::prefix('{locale}')
                 Route::post('{collection}/clean2', Clean2Controller::class)->name('clean2');
             });
 
-            Route::prefix('collections/{collection}/entries')->name('entries.')->group(function () {
-                Route::get('create', [EntryController::class, 'create'])->name('create');
-                Route::post('/', [EntryController::class, 'store'])->middleware('throttle:entry')->name('store');
-            });
+            Route::prefix('collections/{collection}/entries')
+                ->name('entries.')
+                ->middleware(EnsureCanRespondToSurvey::class)
+                ->group(function () {
+                    Route::get('create', [EntryController::class, 'create'])->name('create');
+                    Route::post('/', [EntryController::class, 'store'])->middleware('throttle:entry')->name('store');
+                });
 
             Route::prefix('wallet')->name('wallet.')->middleware('throttle:wallet')->group(function () {
                 Route::get('/', [WalletController::class, 'index'])->withoutMiddleware('throttle:wallet')->name('index');

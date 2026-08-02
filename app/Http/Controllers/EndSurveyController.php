@@ -5,6 +5,7 @@ namespace App\Http\Controllers;
 use App\Models\Collection;
 use App\Models\User;
 use App\Services\WalletService;
+use App\Support\Money;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\DB;
 
@@ -28,13 +29,23 @@ class EndSurveyController extends Controller
             if ($refund > 0) {
                 $this->wallet->credit($user, $refund, 'escrow_refund', [
                     'collection_id' => $collection->id,
-                    'description'   => 'Reward pool refund: ' . $collection->title . ' (survey ended, platform fee retained)',
-                    'activity'      => \App\Support\Money::format($refund) . ' refunded after ending "' . $collection->title . '"',
+                    'description'   => __('Reward pool refund: :title (survey ended, platform fee retained)', ['title' => $collection->title]),
+                    'activity'      => __(':amount refunded after ending ":title"', [
+                        'amount' => Money::format($refund),
+                        'title'  => $collection->title,
+                    ]),
                 ]);
             }
         });
 
-        return redirect()->route('collections.index')
-            ->with('success', '"' . $collection->title . '" survey ended.' . ($refund > 0 ? ' ' . \App\Support\Money::format($refund) . ' refunded to your wallet (platform fee not refunded).' : ''));
+        $message = __('":title" survey ended.', ['title' => $collection->title]);
+
+        if ($refund > 0) {
+            $message .= ' ' . __(':amount refunded to your wallet (platform fee not refunded).', [
+                'amount' => Money::format($refund),
+            ]);
+        }
+
+        return redirect()->route('collections.index')->with('success', $message);
     }
 }
