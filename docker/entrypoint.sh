@@ -62,7 +62,9 @@ fi
 
 if [ "${RUN_SEEDERS:-true}" = "true" ]; then
     log "Seeding (demo data is inserted only when the database has no users)..."
-    php artisan db:seed --force --no-interaction
+    if ! php artisan db:seed --force --no-interaction; then
+        log "WARNING: seeding failed. Continuing - the app runs fine without demo data."
+    fi
 else
     log "RUN_SEEDERS is not 'true' - skipping seeders."
 fi

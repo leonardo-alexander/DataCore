@@ -26,7 +26,7 @@ return [
     'admin' => [
         'name'     => env('ADMIN_NAME', 'Admin'),
         'email'    => env('ADMIN_EMAIL', 'admin@datacore.test'),
-        'password' => env('ADMIN_PASSWORD', 'password'),
+        'password' => env('ADMIN_PASSWORD') ?: null,
     ],
 
 ];

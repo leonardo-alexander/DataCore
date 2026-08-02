@@ -10,8 +10,6 @@ use App\Models\Profile;
 use App\Models\User;
 use App\Models\Verification;
 use App\Models\Wallet;
-use App\Services\WalletService;
-use App\Support\Money;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\DB;
@@ -22,14 +20,12 @@ use Throwable;
 
 class AuthController extends Controller
 {
-    private const WELCOME_BONUS = 50000;
-
     public function viewRegister()
     {
         return view('auth.register');
     }
 
-    public function register(RegisterRequest $request, WalletService $wallet)
+    public function register(RegisterRequest $request)
     {
         $data = $request->validated();
 
@@ -47,8 +43,6 @@ class AuthController extends Controller
 
         Auth::login($user);
         $request->session()->regenerate();
-
-        $this->grantWelcomeBonus($user, $wallet);
 
         return redirect()->route('dashboard')->with('success', $this->welcomeMessage($user));
     }
@@ -85,7 +79,7 @@ class AuthController extends Controller
         return Socialite::driver('google')->redirect();
     }
 
-    public function handleGoogleCallback(Request $request, WalletService $wallet)
+    public function handleGoogleCallback(Request $request)
     {
         try {
             $googleUser = Socialite::driver('google')->user();
@@ -124,8 +118,6 @@ class AuthController extends Controller
         $request->session()->regenerate();
 
         if ($isNewAccount) {
-            $this->grantWelcomeBonus($user, $wallet);
-
             return redirect()->route('dashboard')->with('success', $this->welcomeMessage($user));
         }
 
@@ -146,19 +138,10 @@ class AuthController extends Controller
         );
     }
 
-    private function grantWelcomeBonus(User $user, WalletService $wallet): void
-    {
-        $wallet->credit($user, self::WELCOME_BONUS, 'reward', [
-            'description' => __('Welcome bonus'),
-            'activity'    => __('You received a :amount welcome bonus', ['amount' => Money::format(self::WELCOME_BONUS)]),
-        ]);
-    }
-
     private function welcomeMessage(User $user): string
     {
-        return __('Welcome to DataCore, :name! We dropped :amount in your wallet to get you started.', [
-            'name'   => $user->name,
-            'amount' => Money::format(self::WELCOME_BONUS),
+        return __('Welcome to DataCore, :name! Top up your wallet to get started.', [
+            'name' => $user->name,
         ]);
     }
 }

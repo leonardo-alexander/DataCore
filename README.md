@@ -178,7 +178,7 @@ To re-audit coverage after adding strings, compare the `__()` calls in `app/`,
 
 ## Economy
 
-- New accounts get a **Rp 50,000 welcome bonus**.
+- New accounts start with an empty wallet and top up to buy datasets or run Full Clean.
 - Publishing a survey escrows `reward × target × (1 + platform fee)` from the creator's
   wallet; unused reward slots are refunded when the survey ends, is paused, or is deleted.
   The platform fee is never refunded.

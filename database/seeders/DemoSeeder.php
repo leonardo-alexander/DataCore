@@ -293,7 +293,7 @@ class DemoSeeder extends Seeder
         $map = [];
 
         foreach ($items as $item) {
-            $map[$item['slug']] = Category::create($item);
+            $map[$item['slug']] = Category::firstOrCreate(['slug' => $item['slug']], $item);
         }
 
         return $map;
@@ -546,17 +546,6 @@ class DemoSeeder extends Seeder
             'amount'      => 600000,
             'status'      => 'success',
             'description' => 'Top-up via Virtual Account',
-            'created_at'  => now()->subDays(10),
-        ]);
-
-        Transaction::create([
-            'user_id'     => $demo->id,
-            'reference'   => 'TXN-' . strtoupper(Str::random(8)),
-            'type'        => 'reward',
-            'direction'   => 'credit',
-            'amount'      => 50000,
-            'status'      => 'success',
-            'description' => 'Welcome bonus',
             'created_at'  => now()->subDays(10),
         ]);
 
