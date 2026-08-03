@@ -104,7 +104,11 @@ class AdminController extends Controller
 
         abort_if(blank($raw), 404);
 
+        // Older rows stored a "/storage/…" URL prefix even for files on the private
+        // disk; normalise both shapes down to a disk-relative path.
         $path = preg_replace('#^storage/#', '', ltrim($raw, '/'));
+
+        abort_if(str_contains($path, '..'), 404);
 
         foreach (['local', 'public'] as $disk) {
             if (Storage::disk($disk)->exists($path)) {

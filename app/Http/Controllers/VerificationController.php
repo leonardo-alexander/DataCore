@@ -28,8 +28,10 @@ class VerificationController extends Controller
 
         $user->verification()->firstOrCreate([])->update([
             'id_number'   => $request->validated('id_number'),
-            'id_card_url' => '/storage/' . $request->file('id_card')->store('verifications', 'local'),
-            'selfie_url'  => '/storage/' . $request->file('selfie')->store('verifications', 'local'),
+            // Disk-relative paths on the private disk — these are ID photos, so they are
+            // served only through the admin document route, never from a public URL.
+            'id_card_url' => $request->file('id_card')->store('verifications', 'local'),
+            'selfie_url'  => $request->file('selfie')->store('verifications', 'local'),
             'status'      => 'pending',
             'note'        => null,
         ]);
