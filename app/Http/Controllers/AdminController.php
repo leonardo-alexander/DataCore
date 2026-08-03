@@ -30,7 +30,7 @@ class AdminController extends Controller
         $filter = $request->query('status', 'all');
         $search = $request->query('q');
 
-        $query = User::query()->with('verification')->latest();
+        $query = User::query()->with(['verification', 'profile'])->latest();
 
         if (in_array($filter, ['pending', 'verified', 'rejected', 'unverified'], true)) {
             $query->whereHas('verification', fn($q) => $q->where('status', $filter));

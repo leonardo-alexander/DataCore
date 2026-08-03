@@ -10,6 +10,17 @@
             'rejected' => 'bg-red-50 text-red-600 ring-red-200',
             'unverified' => 'bg-slate-100 text-slate-500 ring-slate-200',
         ];
+        $statusLabel = [
+            'verified' => __('Verified'),
+            'pending' => __('Pending'),
+            'rejected' => __('Rejected'),
+            'unverified' => __('Unverified'),
+        ];
+        $statusHint = [
+            'verified' => __('This account is verified. No further action needed.'),
+            'rejected' => __('This verification was rejected. The user can submit again.'),
+            'unverified' => __('This user has not submitted any verification documents yet.'),
+        ];
     @endphp
 
     {{-- Header --}}
@@ -86,9 +97,12 @@
     </div>
 
     {{-- User Table --}}
-    <div class="mt-6 rounded-2xl border border-slate-200/70 bg-white shadow-card">
+    <div class="mt-6 overflow-hidden rounded-2xl border border-slate-200/70 bg-white shadow-card">
         <div class="flex flex-wrap items-center justify-between gap-3 px-6 py-4">
-            <h2 class="font-display text-lg font-semibold text-slate-900">{{ __('Users') }}</h2>
+            <div>
+                <h2 class="font-display text-lg font-semibold text-slate-900">{{ __('Users') }}</h2>
+                <p class="mt-0.5 text-xs text-slate-500">{{ __(':count accounts', ['count' => $users->total()]) }}</p>
+            </div>
 
             <form method="GET" class="flex items-center gap-2">
                 <div class="relative">
@@ -115,102 +129,241 @@
         </div>
 
         <div class="overflow-x-auto">
-            <table class="w-full text-sm">
+            <table class="w-full min-w-2xl table-fixed text-sm">
                 <thead>
-                    <tr class="border-t border-slate-100 bg-slate-50/60">
-                        <th class="px-6 py-3 text-left font-medium text-slate-500">{{ __('Users') }}</th>
-                        <th class="px-6 py-3 text-left font-medium text-slate-500">{{ __('Joined') }}</th>
-                        <th class="px-6 py-3 text-left font-medium text-slate-500">{{ __('Status') }}</th>
-                        <th class="px-6 py-3 text-left font-medium text-slate-500">{{ __('Documents') }}</th>
-                        <th class="px-6 py-3 text-right font-medium text-slate-500">{{ __('Actions') }}</th>
+                    <tr class="border-y border-slate-100 bg-slate-50/60 text-[11px] uppercase tracking-wide text-slate-400">
+                        <th class="px-6 py-3 text-left font-semibold">{{ __('User') }}</th>
+                        <th class="w-40 px-6 py-3 text-left font-semibold">{{ __('Joined') }}</th>
+                        <th class="w-36 px-6 py-3 text-left font-semibold">{{ __('Status') }}</th>
+                        <th class="w-36 px-6 py-3 text-right font-semibold">{{ __('Actions') }}</th>
                     </tr>
                 </thead>
-                <tbody class="divide-y divide-slate-100">
+                <tbody class="divide-y divide-slate-100 align-middle">
                     @forelse ($users as $user)
                         @php
-                            $vs = $user->verification?->status ?? 'unverified';
+                            $verification = $user->verification;
+                            $profile = $user->profile;
+                            $vs = $verification?->status ?? 'unverified';
+
+                            $fields = [
+                                ['label' => __('National ID'), 'value' => $verification?->id_number, 'mono' => true, 'required' => true],
+                                [
+                                    'label' => __('Date of birth'),
+                                    'value' => $profile?->dob
+                                        ? $profile->dob->format('d M Y') . ($profile->age() !== null ? ' · ' . __(':count yrs', ['count' => $profile->age()]) : '')
+                                        : null,
+                                    'required' => true,
+                                ],
+                                ['label' => __('Gender'), 'value' => $profile?->gender, 'required' => true],
+                                ['label' => __('Phone number'), 'value' => $profile?->phone_number],
+                                ['label' => __('City / domicile'), 'value' => $profile?->city, 'required' => true],
+                                ['label' => __('Profession'), 'value' => $profile?->profession],
+                                ['label' => __('Marital status'), 'value' => $profile?->marital_status],
+                                ['label' => __('Address'), 'value' => $profile?->address, 'required' => true, 'wide' => true],
+                            ];
+
+                            $documents = [
+                                ['type' => 'id_card', 'label' => __('ID Card'), 'icon' => 'id-card', 'url' => $verification?->id_card_url],
+                                ['type' => 'selfie', 'label' => __('Selfie'), 'icon' => 'camera', 'url' => $verification?->selfie_url],
+                            ];
                         @endphp
-                        <tr class="group transition hover:bg-slate-50/60">
+                        <tr x-data="{ open: false, mode: 'view' }" class="transition hover:bg-slate-50/60">
                             <td class="px-6 py-4">
-                                <div class="font-medium text-slate-900">{{ $user->name }}</div>
-                                <div class="text-xs text-slate-400">{{ $user->email }}</div>
+                                <div class="flex items-center gap-3">
+                                    <span
+                                        class="dc-spectrum flex h-9 w-9 shrink-0 items-center justify-center rounded-full text-[11px] font-semibold text-white">
+                                        {{ strtoupper(mb_substr($user->name, 0, 2)) }}
+                                    </span>
+                                    <div class="min-w-0">
+                                        <div class="flex items-center gap-1.5">
+                                            <span class="truncate font-medium text-slate-900">{{ $user->name }}</span>
+                                            @if ($user->is_admin)
+                                                <span
+                                                    class="shrink-0 rounded px-1.5 py-0.5 text-[10px] font-semibold uppercase tracking-wide text-indigo-600 ring-1 ring-indigo-200">{{ __('Admin') }}</span>
+                                            @endif
+                                        </div>
+                                        <div class="truncate text-xs text-slate-400">{{ $user->email }}</div>
+                                    </div>
+                                </div>
                             </td>
-                            <td class="px-6 py-4 text-slate-500">{{ $user->created_at->format('d M Y') }}</td>
+                            <td class="whitespace-nowrap px-6 py-4">
+                                <div class="text-slate-600">{{ $user->created_at->format('d M Y') }}</div>
+                                <div class="text-xs text-slate-400">{{ $user->created_at->diffForHumans() }}</div>
+                            </td>
                             <td class="px-6 py-4">
                                 <span
-                                    class="inline-flex items-center rounded-full px-2.5 py-0.5 text-xs font-semibold ring-1 {{ $statusBadge[$vs] ?? $statusBadge['unverified'] }}">
-                                    {{ ucfirst($vs) }}
+                                    class="inline-flex items-center gap-1.5 whitespace-nowrap rounded-full px-2.5 py-1 text-xs font-semibold ring-1 {{ $statusBadge[$vs] ?? $statusBadge['unverified'] }}">
+                                    <span class="h-1.5 w-1.5 rounded-full bg-current opacity-60"></span>
+                                    {{ $statusLabel[$vs] ?? $statusLabel['unverified'] }}
                                 </span>
-                                @if ($user->verification?->note)
-                                    <p class="mt-1 max-w-xs truncate text-xs text-slate-400">
-                                        {{ $user->verification->note }}</p>
-                                @endif
-                            </td>
-                            <td class="px-6 py-4">
-                                @if ($user->verification)
-                                    <div class="flex items-center gap-2">
-                                        <a href="{{ route('admin.verifications.document', [$user, 'id_card']) }}"
-                                            target="_blank"
-                                            class="inline-flex items-center gap-1 rounded-lg border border-slate-200 bg-white px-2.5 py-1 text-xs font-medium text-slate-600 transition hover:border-indigo-200 hover:text-indigo-600">
-                                            <i data-lucide="id-card" class="h-3.5 w-3.5"></i> {{ __('ID Card') }}
-                                        </a>
-                                        <a href="{{ route('admin.verifications.document', [$user, 'selfie']) }}"
-                                            target="_blank"
-                                            class="inline-flex items-center gap-1 rounded-lg border border-slate-200 bg-white px-2.5 py-1 text-xs font-medium text-slate-600 transition hover:border-indigo-200 hover:text-indigo-600">
-                                            <i data-lucide="camera" class="h-3.5 w-3.5"></i> {{ __('Selfie') }}
-                                        </a>
-                                    </div>
-                                @else
-                                    <span class="text-xs text-slate-400">-</span>
-                                @endif
                             </td>
                             <td class="px-6 py-4 text-right">
-                                @if ($vs === 'pending')
-                                    <div class="flex items-center justify-end gap-2">
-                                        <form method="POST" action="{{ route('admin.users.approve', $user) }}">
-                                            @csrf
-                                            <button type="submit"
-                                                class="inline-flex items-center gap-1.5 rounded-lg bg-emerald-50 px-3 py-1.5 text-xs font-semibold text-emerald-700 ring-1 ring-emerald-200 transition hover:bg-emerald-100">
-                                                <i data-lucide="check" class="h-3.5 w-3.5"></i> {{ __('Approve') }}
-                                            </button>
-                                        </form>
-                                        <form method="POST" action="{{ route('admin.users.reject', $user) }}"
-                                            x-data="{ open: false }" @submit.prevent="open = true">
-                                            <button type="button" @click="open = true"
-                                                class="inline-flex items-center gap-1.5 rounded-lg bg-red-50 px-3 py-1.5 text-xs font-semibold text-red-600 ring-1 ring-red-200 transition hover:bg-red-100">
-                                                <i data-lucide="x" class="h-3.5 w-3.5"></i> {{ __('Reject') }}
-                                            </button>
-                                            {{-- Reject note modal --}}
-                                            <div x-show="open" x-cloak
-                                                class="fixed inset-0 z-50 flex items-center justify-center bg-slate-900/60 backdrop-blur-sm"
-                                                @click.self="open = false">
-                                                <div class="mx-4 w-full max-w-sm rounded-2xl bg-white p-6 shadow-2xl">
-                                                    <h3 class="font-display text-base font-semibold text-slate-900">{{ __('Reject verification') }}</h3>
-                                                    <p class="mt-1 text-xs text-slate-500">{{ __('Optionally leave a note explaining why.') }}</p>
-                                                    <form method="POST" action="{{ route('admin.users.reject', $user) }}"
-                                                        class="mt-4">
-                                                        @csrf
-                                                        <textarea name="note" rows="3" placeholder="{{ __('Reason (optional)') }}"
-                                                            class="w-full resize-none rounded-xl border border-slate-200 bg-slate-50 px-4 py-2.5 text-sm focus:border-indigo-300 focus:outline-none focus:ring-2 focus:ring-indigo-100"></textarea>
-                                                        <div class="mt-4 flex justify-end gap-2">
-                                                            <button type="button" @click="open = false"
-                                                                class="rounded-lg border border-slate-200 bg-white px-4 py-2 text-sm font-medium text-slate-600 hover:bg-slate-50">{{ __('Cancel') }}</button>
+                                <button type="button"
+                                    @click="open = true; mode = 'view'; $nextTick(() => window.renderIcons?.())"
+                                    @class([
+                                        'inline-flex items-center gap-1.5 whitespace-nowrap rounded-lg px-3 py-1.5 text-xs font-semibold transition',
+                                        'dc-spectrum text-white shadow-glow hover:opacity-90' => $vs === 'pending',
+                                        'border border-slate-200 bg-white text-slate-600 hover:border-indigo-200 hover:text-indigo-600' => $vs !== 'pending',
+                                    ])>
+                                    <i data-lucide="{{ $vs === 'pending' ? 'clipboard-check' : 'eye' }}" class="h-3.5 w-3.5"></i>
+                                    {{ $vs === 'pending' ? __('Review') : __('Details') }}
+                                </button>
+
+                                {{-- Review modal: profile, documents, and verification actions --}}
+                                <template x-if="open">
+                                    <div class="fixed inset-0 z-50 flex items-center justify-center bg-slate-900/60 p-4 backdrop-blur-sm"
+                                        role="dialog" aria-modal="true" @click.self="open = false"
+                                        @keydown.escape.window="open = false">
+                                        <div
+                                            class="flex max-h-[90vh] w-full max-w-2xl flex-col overflow-hidden rounded-2xl bg-white text-left shadow-2xl">
+                                            {{-- Header --}}
+                                            <div class="flex items-start gap-4 border-b border-slate-100 p-5 sm:p-6">
+                                                <span
+                                                    class="dc-spectrum flex h-12 w-12 shrink-0 items-center justify-center rounded-full text-sm font-semibold text-white">
+                                                    {{ strtoupper(mb_substr($user->name, 0, 2)) }}
+                                                </span>
+                                                <div class="min-w-0 flex-1">
+                                                    <div class="flex flex-wrap items-center gap-2">
+                                                        <h3 class="font-display text-lg font-semibold text-slate-900">
+                                                            {{ $user->name }}</h3>
+                                                        <span
+                                                            class="inline-flex items-center gap-1.5 rounded-full px-2.5 py-1 text-xs font-semibold ring-1 {{ $statusBadge[$vs] ?? $statusBadge['unverified'] }}">
+                                                            <span class="h-1.5 w-1.5 rounded-full bg-current opacity-60"></span>
+                                                            {{ $statusLabel[$vs] ?? $statusLabel['unverified'] }}
+                                                        </span>
+                                                    </div>
+                                                    <p class="truncate text-sm text-slate-500">{{ $user->email }}</p>
+                                                    <p class="mt-0.5 text-xs text-slate-400">
+                                                        {{ __('Joined') }} {{ $user->created_at->format('d M Y') }}</p>
+                                                </div>
+                                                <button type="button" @click="open = false"
+                                                    class="shrink-0 rounded-lg p-1.5 text-slate-400 transition hover:bg-slate-100 hover:text-slate-600">
+                                                    <i data-lucide="x" class="h-4 w-4"></i>
+                                                </button>
+                                            </div>
+
+                                            {{-- Body --}}
+                                            <div class="flex-1 space-y-6 overflow-y-auto p-5 sm:p-6">
+                                                <div>
+                                                    <p class="text-[11px] font-semibold uppercase tracking-wide text-slate-400">
+                                                        {{ __('Profile') }}</p>
+                                                    <dl class="mt-3 grid grid-cols-1 gap-x-6 gap-y-3 sm:grid-cols-2">
+                                                        @foreach ($fields as $field)
+                                                            <div @class(['sm:col-span-2' => $field['wide'] ?? false])>
+                                                                <dt class="text-xs text-slate-400">{{ $field['label'] }}</dt>
+                                                                @if (filled($field['value']))
+                                                                    <dd @class([
+                                                                        'mt-0.5 break-words text-sm text-slate-900',
+                                                                        'font-mono' => $field['mono'] ?? false,
+                                                                    ])>{{ $field['value'] }}</dd>
+                                                                @else
+                                                                    <dd @class([
+                                                                        'mt-0.5 text-sm',
+                                                                        'text-amber-600' => $field['required'] ?? false,
+                                                                        'text-slate-300' => !($field['required'] ?? false),
+                                                                    ])>{{ ($field['required'] ?? false) ? __('Not provided') : '—' }}</dd>
+                                                                @endif
+                                                            </div>
+                                                        @endforeach
+                                                    </dl>
+                                                </div>
+
+                                                <div>
+                                                    <p class="text-[11px] font-semibold uppercase tracking-wide text-slate-400">
+                                                        {{ __('Documents') }}</p>
+                                                    <div class="mt-3 grid grid-cols-1 gap-3 sm:grid-cols-2">
+                                                        @foreach ($documents as $document)
+                                                            @if (filled($document['url']))
+                                                                <a href="{{ route('admin.verifications.document', [$user, $document['type']]) }}"
+                                                                    target="_blank"
+                                                                    class="group overflow-hidden rounded-xl border border-slate-200 transition hover:border-indigo-300">
+                                                                    <img src="{{ route('admin.verifications.document', [$user, $document['type']]) }}"
+                                                                        alt="{{ $document['label'] }}" loading="lazy"
+                                                                        class="h-40 w-full bg-slate-50 object-contain">
+                                                                    <div
+                                                                        class="flex items-center justify-between gap-2 border-t border-slate-200 bg-white px-3 py-2">
+                                                                        <span
+                                                                            class="inline-flex items-center gap-1.5 text-xs font-medium text-slate-600">
+                                                                            <i data-lucide="{{ $document['icon'] }}" class="h-3.5 w-3.5"></i>
+                                                                            {{ $document['label'] }}
+                                                                        </span>
+                                                                        <i data-lucide="external-link"
+                                                                            class="h-3.5 w-3.5 text-slate-400 transition group-hover:text-indigo-600"></i>
+                                                                    </div>
+                                                                </a>
+                                                            @else
+                                                                <div
+                                                                    class="flex flex-col items-center justify-center gap-1.5 rounded-xl border border-dashed border-slate-200 bg-slate-50/60 px-3 py-10 text-center">
+                                                                    <i data-lucide="image-off" class="h-4 w-4 text-slate-300"></i>
+                                                                    <span class="text-xs text-slate-400">
+                                                                        {{ __(':document not submitted', ['document' => $document['label']]) }}
+                                                                    </span>
+                                                                </div>
+                                                            @endif
+                                                        @endforeach
+                                                    </div>
+                                                </div>
+
+                                                @if ($verification?->note)
+                                                    <div class="rounded-xl bg-slate-50 p-4">
+                                                        <p class="text-[11px] font-semibold uppercase tracking-wide text-slate-400">
+                                                            {{ __('Verification note') }}</p>
+                                                        <p class="mt-1 text-sm text-slate-600">{{ $verification->note }}</p>
+                                                    </div>
+                                                @endif
+                                            </div>
+
+                                            {{-- Footer --}}
+                                            <div class="border-t border-slate-100 bg-slate-50/60 p-4 sm:px-6">
+                                                @if ($vs === 'pending')
+                                                    <div x-show="mode === 'view'" class="flex flex-col-reverse gap-2 sm:flex-row sm:justify-end">
+                                                        <button type="button" @click="mode = 'reject'"
+                                                            class="inline-flex items-center justify-center gap-1.5 rounded-lg bg-red-50 px-4 py-2 text-sm font-semibold text-red-600 ring-1 ring-red-200 transition hover:bg-red-100">
+                                                            <i data-lucide="x" class="h-4 w-4"></i> {{ __('Reject') }}
+                                                        </button>
+                                                        <form method="POST" action="{{ route('admin.users.approve', $user) }}">
+                                                            @csrf
                                                             <button type="submit"
-                                                                class="rounded-lg bg-red-600 px-4 py-2 text-sm font-semibold text-white hover:bg-red-700">{{ __('Reject') }}</button>
+                                                                class="inline-flex w-full items-center justify-center gap-1.5 rounded-lg bg-emerald-600 px-4 py-2 text-sm font-semibold text-white transition hover:bg-emerald-700">
+                                                                <i data-lucide="check" class="h-4 w-4"></i> {{ __('Approve') }}
+                                                            </button>
+                                                        </form>
+                                                    </div>
+
+                                                    <form x-show="mode === 'reject'" method="POST"
+                                                        action="{{ route('admin.users.reject', $user) }}">
+                                                        @csrf
+                                                        <p class="text-sm font-semibold text-slate-900">{{ __('Reject verification') }}</p>
+                                                        <p class="mt-0.5 text-xs text-slate-500">
+                                                            {{ __('Optionally leave a note explaining why.') }}</p>
+                                                        <textarea name="note" rows="2" placeholder="{{ __('Reason (optional)') }}"
+                                                            class="mt-3 w-full resize-none rounded-xl border border-slate-200 bg-white px-4 py-2.5 text-sm focus:border-indigo-300 focus:outline-none focus:ring-2 focus:ring-indigo-100"></textarea>
+                                                        <div class="mt-3 flex justify-end gap-2">
+                                                            <button type="button" @click="mode = 'view'"
+                                                                class="rounded-lg border border-slate-200 bg-white px-4 py-2 text-sm font-medium text-slate-600 transition hover:bg-slate-50">{{ __('Back') }}</button>
+                                                            <button type="submit"
+                                                                class="rounded-lg bg-red-600 px-4 py-2 text-sm font-semibold text-white transition hover:bg-red-700">{{ __('Confirm reject') }}</button>
                                                         </div>
                                                     </form>
-                                                </div>
+                                                @else
+                                                    <div class="flex flex-wrap items-center justify-between gap-3">
+                                                        <p class="text-xs text-slate-500">{{ $statusHint[$vs] ?? '' }}</p>
+                                                        <button type="button" @click="open = false"
+                                                            class="rounded-lg border border-slate-200 bg-white px-4 py-2 text-sm font-medium text-slate-600 transition hover:bg-slate-50">{{ __('Close') }}</button>
+                                                    </div>
+                                                @endif
                                             </div>
-                                        </form>
+                                        </div>
                                     </div>
-                                @else
-                                    <span class="text-xs text-slate-400">-</span>
-                                @endif
+                                </template>
                             </td>
                         </tr>
                     @empty
                         <tr>
-                            <td colspan="5" class="px-6 py-10 text-center text-sm text-slate-400">{{ __('No users found.') }}</td>
+                            <td colspan="4" class="px-6 py-14 text-center">
+                                <i data-lucide="users" class="mx-auto h-8 w-8 text-slate-300"></i>
+                                <p class="mt-3 text-sm text-slate-400">{{ __('No users found.') }}</p>
+                            </td>
                         </tr>
                     @endforelse
                 </tbody>
