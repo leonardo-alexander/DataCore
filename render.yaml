@@ -62,6 +62,12 @@ services:
       - key: CLEANING_API_URL
         value: https://leonardo-alexander-data-cleaning.hf.space/process
 
+      # Usability testing only: skips identity review so participants are not
+      # blocked waiting on an admin. Flip to true in the Render dashboard for a
+      # session, then set it back — it disables identity checks entirely.
+      - key: AUTO_VERIFY_USERS
+        value: "false"
+
       - key: GOOGLE_CLIENT_ID
         sync: false
       - key: GOOGLE_CLIENT_SECRET

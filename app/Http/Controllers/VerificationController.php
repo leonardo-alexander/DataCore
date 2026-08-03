@@ -24,6 +24,8 @@ class VerificationController extends Controller
         /** @var \App\Models\User $user */
         $user = Auth::user();
 
+        $autoVerify = config('datacore.auto_verify');
+
         $user->profile()->updateOrCreate(['user_id' => $user->id], $request->profileFields());
 
         $user->verification()->firstOrCreate([])->update([
@@ -32,9 +34,20 @@ class VerificationController extends Controller
             // served only through the admin document route, never from a public URL.
             'id_card_url' => $request->file('id_card')->store('verifications', 'local'),
             'selfie_url'  => $request->file('selfie')->store('verifications', 'local'),
-            'status'      => 'pending',
+            'status'      => $autoVerify ? 'verified' : 'pending',
             'note'        => null,
         ]);
+
+        if ($autoVerify) {
+            Activity::log(
+                $user->id,
+                'system',
+                __('Account verified'),
+                __('Your identity is confirmed. You can now sell datasets.'),
+            );
+
+            return back()->with('success', __('Verification complete. You can now sell datasets.'));
+        }
 
         Activity::log(
             $user->id,

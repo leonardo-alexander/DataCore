@@ -69,6 +69,11 @@ else
     log "RUN_SEEDERS is not 'true' - skipping seeders."
 fi
 
+if [ "${AUTO_VERIFY_USERS:-false}" = "true" ]; then
+    log "AUTO_VERIFY_USERS is on - identity review is skipped and existing accounts are marked verified."
+    php artisan users:verify-all --no-interaction || log "WARNING: could not auto-verify existing accounts."
+fi
+
 log "Caching configuration, routes and views..."
 php artisan config:cache
 php artisan route:cache

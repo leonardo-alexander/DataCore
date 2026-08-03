@@ -345,6 +345,8 @@
     "Google sign-in failed. Please try again.": "Masuk dengan Google gagal. Silakan coba lagi.",
     "Welcome to DataCore": "Selamat datang di DataCore",
     "Your account is ready. Verify your identity to start selling.": "Akun Anda siap. Verifikasi identitas Anda untuk mulai menjual.",
+    "Your account is ready. You can start selling right away.": "Akun Anda siap. Anda dapat langsung mulai menjual.",
+    "Verification complete. You can now sell datasets.": "Verifikasi selesai. Anda sekarang dapat menjual dataset.",
     "Welcome to DataCore, :name! Top up your wallet to get started.": "Selamat datang di DataCore, :name! Isi saldo dompet Anda untuk memulai.",
     "This collection has no entries to refine yet.": "Koleksi ini belum memiliki entri untuk dimurnikan.",
     "Large dataset. Clean 1 is running in the background. You will be notified when done.": "Dataset besar. Clean 1 berjalan di latar belakang. Anda akan diberi tahu setelah selesai.",

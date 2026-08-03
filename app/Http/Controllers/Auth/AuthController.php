@@ -126,15 +126,22 @@ class AuthController extends Controller
 
     private function setUpNewAccount(User $user, ?string $avatarUrl = null): void
     {
+        $autoVerify = config('datacore.auto_verify');
+
         Profile::create(['user_id' => $user->id, 'picture_url' => $avatarUrl]);
         Wallet::create(['user_id' => $user->id, 'balance' => 0]);
-        Verification::create(['user_id' => $user->id, 'status' => 'unverified']);
+        Verification::create([
+            'user_id' => $user->id,
+            'status' => $autoVerify ? 'verified' : 'unverified',
+        ]);
 
         Activity::log(
             $user->id,
             'system',
             __('Welcome to DataCore'),
-            __('Your account is ready. Verify your identity to start selling.'),
+            $autoVerify
+                ? __('Your account is ready. You can start selling right away.')
+                : __('Your account is ready. Verify your identity to start selling.'),
         );
     }
 

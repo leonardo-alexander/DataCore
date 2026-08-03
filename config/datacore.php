@@ -4,6 +4,14 @@ return [
 
     'cleaning_url' => env('CLEANING_API_URL', 'https://leonardo-alexander-data-cleaning.hf.space/process'),
 
+    /*
+     * Testing switch: skips manual identity review, so new accounts start verified
+     * and any submitted verification is approved on the spot. Meant for usability
+     * sessions where waiting on an admin would block the participant. Keep this
+     * false in real deployments — it turns off identity checks entirely.
+     */
+    'auto_verify' => filter_var(env('AUTO_VERIFY_USERS', false), FILTER_VALIDATE_BOOLEAN),
+
     'cleaning_sync_limit' => (int) env('DATACORE_CLEANING_SYNC_LIMIT', 300),
 
     'clean2_fee' => (int) env('DATACORE_CLEAN2_FEE', 25000),
