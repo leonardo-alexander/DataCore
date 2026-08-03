@@ -13,6 +13,8 @@ use Illuminate\Contracts\Queue\ShouldQueue;
 use Illuminate\Foundation\Bus\Dispatchable;
 use Illuminate\Queue\InteractsWithQueue;
 use Illuminate\Queue\SerializesModels;
+use Illuminate\Support\Facades\Cache;
+use RuntimeException;
 use Throwable;
 
 class ProcessCleaning implements ShouldQueue
@@ -27,16 +29,38 @@ class ProcessCleaning implements ShouldQueue
         public Collection $collection,
         public User $user,
         public string $stage,
+        public ?string $lockOwner = null,
     ) {}
 
+    /**
+     * One clean at a time per collection. The dispatcher takes the lock and hands
+     * its owner token here so this job can release it when the work is done.
+     */
+    public static function lockKey(Collection $collection): string
+    {
+        return 'cleaning:'.$collection->id;
+    }
+
     public function handle(CleaningService $cleaning, WalletService $wallet): void
+    {
+        try {
+            $this->run($cleaning, $wallet);
+        } finally {
+            $this->releaseLock();
+        }
+    }
+
+    private function run(CleaningService $cleaning, WalletService $wallet): void
     {
         $label = $this->stage === 'clean2' ? 'Clean 2' : 'Clean 1';
 
         try {
             $payload = $cleaning->process($this->collection, $this->stage);
         } catch (Throwable $e) {
-            Activity::log($this->user->id, 'cleaning', $label . ' failed', $this->collection->title . ' — ' . $e->getMessage());
+            report($e);
+
+            Activity::log($this->user->id, 'cleaning', $label.' failed', $this->collection->title.' — '.$this->reason($e));
+
             return;
         }
 
@@ -46,11 +70,12 @@ class ProcessCleaning implements ShouldQueue
             try {
                 $wallet->debit($this->user, $fee, 'payment', [
                     'collection_id' => $this->collection->id,
-                    'description' => 'Clean 2 premium refine — ' . $this->collection->title,
-                    'activity' => 'Clean 2 charged Rp ' . number_format($fee, 0, ',', '.') . ' for ' . $this->collection->title,
+                    'description' => 'Clean 2 premium refine — '.$this->collection->title,
+                    'activity' => 'Clean 2 charged Rp '.number_format($fee, 0, ',', '.').' for '.$this->collection->title,
                 ]);
             } catch (InsufficientBalanceException $e) {
-                Activity::log($this->user->id, 'cleaning', 'Clean 2 not charged', 'Top up your wallet and try again — ' . $this->collection->title . '.');
+                Activity::log($this->user->id, 'cleaning', 'Clean 2 not charged', 'Top up your wallet and try again — '.$this->collection->title.'.');
+
                 return;
             }
         }
@@ -63,8 +88,8 @@ class ProcessCleaning implements ShouldQueue
         Activity::log(
             $this->user->id,
             'cleaning',
-            $label . ' complete',
-            $this->collection->title . ' — ' . $rows . ' rows refined' . ($score !== null ? ', quality ' . $score . '.' : '.'),
+            $label.' complete',
+            $this->collection->title.' — '.$rows.' rows refined'.($score !== null ? ', quality '.$score.'.' : '.'),
         );
     }
 
@@ -72,6 +97,31 @@ class ProcessCleaning implements ShouldQueue
     {
         $label = $this->stage === 'clean2' ? 'Clean 2' : 'Clean 1';
 
-        Activity::log($this->user->id, 'cleaning', $label . ' failed', $this->collection->title . ' could not be refined.');
+        Activity::log($this->user->id, 'cleaning', $label.' failed', $this->collection->title.' could not be refined.');
+
+        // handle()'s finally covers the normal path; this catches a worker killed
+        // mid-job, where that finally never ran.
+        $this->releaseLock();
+    }
+
+    /**
+     * Text safe to show a user. Only the cleaning service's own RuntimeExceptions
+     * are written for a person — an HTTP client failure would put the status code
+     * and a slice of the response body straight into their notifications.
+     */
+    private function reason(Throwable $e): string
+    {
+        return $e instanceof RuntimeException
+            ? $e->getMessage()
+            : 'it could not be refined right now. Please try again in a moment.';
+    }
+
+    private function releaseLock(): void
+    {
+        if ($this->lockOwner === null) {
+            return;
+        }
+
+        Cache::restoreLock(static::lockKey($this->collection), $this->lockOwner)->release();
     }
 }

@@ -9,6 +9,7 @@ use App\Services\CleaningService;
 use App\Services\WalletService;
 use App\Support\Money;
 use Illuminate\Support\Facades\Auth;
+use Illuminate\Support\Facades\Cache;
 use Illuminate\Support\Facades\Log;
 use Throwable;
 
@@ -37,8 +38,16 @@ class Clean2Controller extends Controller
                 ->with('error', __('Clean 2 costs :amount. Please top up your wallet first.', ['amount' => Money::format($fee)]));
         }
 
+        // Guards against a second run being started while one is still in flight —
+        // for Clean 2 that would also charge the fee twice.
+        $lock = Cache::lock(ProcessCleaning::lockKey($collection), 900);
+
+        if (! $lock->get()) {
+            return back()->with('error', __('A clean is already running for this collection. Please wait for it to finish.'));
+        }
+
         if ($count > config('datacore.cleaning_sync_limit')) {
-            ProcessCleaning::dispatch($collection, $user, 'clean2');
+            ProcessCleaning::dispatch($collection, $user, 'clean2', $lock->owner());
 
             return back()->with('success', __('Large dataset. Clean 2 is running in the background. :amount will be charged once done.', [
                 'amount' => Money::format($fee),
@@ -57,6 +66,8 @@ class Clean2Controller extends Controller
             Log::error('Clean 2 failed', ['collection_id' => $collection->id, 'error' => $e->getMessage()]);
 
             return back()->with('error', __('Clean 2 could not be completed. Please try again in a moment.'));
+        } finally {
+            $lock->release();
         }
 
         return back()->with('success', __('Clean 2 complete! :amount charged.', ['amount' => Money::format($fee)]));
