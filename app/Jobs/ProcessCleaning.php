@@ -25,6 +25,16 @@ class ProcessCleaning implements ShouldQueue
 
     public int $tries = 1;
 
+    /**
+     * How long a dispatcher may hold the clean lock.
+     *
+     * Deliberately short. The HTTP budget in CleaningService caps a run at ~95s,
+     * so this only needs to outlast a legitimate clean — and if the process that
+     * holds it is killed (platform request timeout, no queue worker draining the
+     * job), the lock expires on its own instead of blocking the collection.
+     */
+    public const LOCK_SECONDS = 180;
+
     public function __construct(
         public Collection $collection,
         public User $user,

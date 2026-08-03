@@ -24,7 +24,7 @@ class Clean1Controller extends Controller
 
         // Without this, every click while a clean is queued or running dispatches
         // another one, stacking duplicate runs and duplicate failure notifications.
-        $lock = Cache::lock(ProcessCleaning::lockKey($collection), 900);
+        $lock = Cache::lock(ProcessCleaning::lockKey($collection), ProcessCleaning::LOCK_SECONDS);
 
         if (! $lock->get()) {
             return back()->with('error', __('A clean is already running for this collection. Please wait for it to finish.'));

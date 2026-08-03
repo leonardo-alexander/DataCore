@@ -40,7 +40,7 @@ class Clean2Controller extends Controller
 
         // Guards against a second run being started while one is still in flight —
         // for Clean 2 that would also charge the fee twice.
-        $lock = Cache::lock(ProcessCleaning::lockKey($collection), 900);
+        $lock = Cache::lock(ProcessCleaning::lockKey($collection), ProcessCleaning::LOCK_SECONDS);
 
         if (! $lock->get()) {
             return back()->with('error', __('A clean is already running for this collection. Please wait for it to finish.'));
