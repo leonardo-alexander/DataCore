@@ -10,6 +10,7 @@ use App\Models\Question;
 use App\Models\User;
 use App\Services\WalletService;
 use App\Support\Money;
+use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\DB;
@@ -128,8 +129,10 @@ class CollectionController extends Controller
             __(':title is now :status.', ['title' => $collection->title, 'status' => $collection->status]),
         );
 
-        return redirect()->route('collections.index')
-            ->with('success', __('":title" was created successfully.', ['title' => $collection->title]));
+        return $this->afterSave(
+            $collection,
+            __('":title" was created successfully.', ['title' => $collection->title]),
+        );
     }
 
     public function edit(string $locale, Collection $collection)
@@ -244,8 +247,25 @@ class CollectionController extends Controller
             $this->syncQuestions($collection, $data['questions'] ?? []);
         });
 
-        return redirect()->route('collections.index')
-            ->with('success', __('":title" was updated.', ['title' => $collection->title]));
+        return $this->afterSave(
+            $collection->fresh(),
+            __('":title" was updated.', ['title' => $collection->title]),
+        );
+    }
+
+    /**
+     * Draft means "save progress without going live", so keep the author in the
+     * editor rather than bouncing them to the list and making them re-open the
+     * collection. Going live or listing for sale is a finished action — those
+     * still land back on the list.
+     */
+    private function afterSave(Collection $collection, string $message): RedirectResponse
+    {
+        $redirect = $collection->status === 'draft'
+            ? redirect()->route('collections.edit', $collection)
+            : redirect()->route('collections.index');
+
+        return $redirect->with('success', $message);
     }
 
     public function destroy(string $locale, Collection $collection)
