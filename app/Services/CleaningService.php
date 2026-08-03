@@ -50,10 +50,15 @@ class CleaningService
         // it either holds the connection open or answers 5xx — so back off between
         // attempts rather than giving up inside three seconds. throw: false keeps
         // the raw RequestException (status code + response body) out of our errors.
+        //
+        // The whole budget stays under 95s on purpose: QUEUE_CONNECTION is sync in
+        // production, so even the "background" clean runs inside the web request,
+        // and a request that outlives the platform's timeout returns a 502 instead
+        // of our error page. 45 + 5 + 45 covers a cold start plus one retry.
         try {
-            $response = Http::timeout(90)
-                ->connectTimeout(20)
-                ->retry(3, fn (int $attempt) => $attempt === 1 ? 2000 : 8000, throw: false)
+            $response = Http::timeout(45)
+                ->connectTimeout(15)
+                ->retry(2, 5000, throw: false)
                 ->attach('file', $csv, 'dataset.csv')
                 ->post($this->endpoint().'?mode='.$mode);
         } catch (ConnectionException $e) {
