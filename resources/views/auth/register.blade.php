@@ -100,7 +100,7 @@
     </a>
 
     {{-- Terms of Service / Privacy Policy modal --}}
-    <div x-show="termsOpen" x-cloak @keydown.escape.window="termsOpen = false"
+    <div x-show="termsOpen" x-cloak x-scroll-lock="termsOpen" @keydown.escape.window="termsOpen = false"
         class="fixed inset-0 z-50 flex items-center justify-center p-4">
         <div class="absolute inset-0 bg-slate-900/40 backdrop-blur-sm" @click="termsOpen = false"></div>
         <div x-show="termsOpen"

@@ -1,5 +1,5 @@
 {{-- Confirm-save modal, lives inside the settings form's Alpine scope (confirmOpen) --}}
-<div x-show="confirmOpen" x-cloak @keydown.escape.window="confirmOpen = false"
+<div x-show="confirmOpen" x-cloak x-scroll-lock="confirmOpen" @keydown.escape.window="confirmOpen = false"
     class="fixed inset-0 z-50 flex items-center justify-center p-4">
     <div class="absolute inset-0 bg-slate-900/40 backdrop-blur-sm" @click="confirmOpen = false"></div>
     <div x-show="confirmOpen"

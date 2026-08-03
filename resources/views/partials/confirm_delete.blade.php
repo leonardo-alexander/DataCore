@@ -1,4 +1,4 @@
-<div x-show="deleteOpen" x-cloak
+<div x-show="deleteOpen" x-cloak x-scroll-lock="deleteOpen"
     class="fixed inset-0 z-50 flex items-center justify-center bg-slate-900/60 backdrop-blur-sm"
     @click.self="deleteOpen = false">
     <div class="mx-4 w-full max-w-sm rounded-2xl bg-white p-6 shadow-2xl">

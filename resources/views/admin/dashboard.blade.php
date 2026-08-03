@@ -212,7 +212,7 @@
                                 {{-- Review modal: profile, documents, and verification actions --}}
                                 <template x-if="open">
                                     <div class="fixed inset-0 z-50 flex items-center justify-center bg-slate-900/60 p-4 backdrop-blur-sm"
-                                        role="dialog" aria-modal="true" @click.self="open = false"
+                                        role="dialog" aria-modal="true" x-scroll-lock @click.self="open = false"
                                         @keydown.escape.window="open = false">
                                         <div
                                             class="flex max-h-[90vh] w-full max-w-2xl flex-col overflow-hidden rounded-2xl bg-white text-left shadow-2xl">
@@ -243,7 +243,7 @@
                                             </div>
 
                                             {{-- Body --}}
-                                            <div class="flex-1 space-y-6 overflow-y-auto p-5 sm:p-6">
+                                            <div class="flex-1 space-y-6 overflow-y-auto overscroll-contain p-5 sm:p-6">
                                                 <div>
                                                     <p class="text-[11px] font-semibold uppercase tracking-wide text-slate-400">
                                                         {{ __('Profile') }}</p>

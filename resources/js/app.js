@@ -2,9 +2,12 @@ import Alpine from 'alpinejs';
 import collapse from '@alpinejs/collapse';
 import { createIcons, icons } from 'lucide';
 import { registerTourStore } from './tour';
+import { registerScrollLock } from './scroll-lock';
 
 Alpine.plugin(collapse);
 document.addEventListener('alpine:init', () => registerTourStore(Alpine));
+registerScrollLock(Alpine);
+
 window.Alpine = Alpine;
 Alpine.start();
 

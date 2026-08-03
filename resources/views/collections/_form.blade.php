@@ -531,7 +531,7 @@
 
     {{-- Full Clean confirmation modal --}}
     @if (isset($collection) && $pipelineState === 'clean1')
-        <div x-show="clean2Open" x-cloak @keydown.escape.window="clean2Open = false"
+        <div x-show="clean2Open" x-cloak x-scroll-lock="clean2Open" @keydown.escape.window="clean2Open = false"
             class="fixed inset-0 z-50 flex items-center justify-center p-4">
             <div class="absolute inset-0 bg-slate-900/40 backdrop-blur-sm" @click="clean2Open = false"></div>
             <div x-show="clean2Open"

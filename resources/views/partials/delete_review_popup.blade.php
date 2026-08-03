@@ -2,6 +2,7 @@
     x-show="openDeleteConfirm"
     x-cloak
     x-transition
+    x-scroll-lock="openDeleteConfirm"
     class="fixed inset-0 z-50 flex items-center justify-center bg-black/50">
 
     <div

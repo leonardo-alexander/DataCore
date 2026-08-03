@@ -1,4 +1,4 @@
-<div x-show="openReview" x-cloak x-transition
+<div x-show="openReview" x-cloak x-transition x-scroll-lock="openReview"
     class="fixed inset-0 z-50 flex items-center justify-center bg-slate-900/60 backdrop-blur-sm"
     @click.self="openReview = false">
 
