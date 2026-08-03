@@ -40,7 +40,8 @@
             </div>
         </div>
         <label class="flex items-center gap-2.5 text-sm text-slate-600">
-            <input type="checkbox" name="remember" class="h-4 w-4 rounded border-slate-300 text-indigo-600 focus:ring-indigo-200">
+            <input type="checkbox" name="remember" value="1" @checked(old('remember'))
+                class="h-4 w-4 rounded border-slate-300 text-indigo-600 focus:ring-indigo-200">
             {{ __('Remember me') }}
         </label>
         <button type="submit" class="dc-spectrum inline-flex w-full items-center justify-center gap-2 rounded-xl px-5 py-2.5 text-sm font-semibold text-white shadow-glow transition hover:brightness-110">

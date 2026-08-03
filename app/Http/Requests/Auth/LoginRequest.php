@@ -11,6 +11,12 @@ class LoginRequest extends FormRequest
         return true;
     }
 
+    protected function prepareForValidation(): void
+    {
+        // Browsers submit a ticked checkbox as "on", which the boolean rule rejects.
+        $this->merge(['remember' => $this->boolean('remember')]);
+    }
+
     public function rules(): array
     {
         return [
