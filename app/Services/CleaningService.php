@@ -3,6 +3,7 @@
 namespace App\Services;
 
 use App\Models\Collection;
+use Illuminate\Http\Client\ConnectionException;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Http;
 use RuntimeException;
@@ -45,10 +46,23 @@ class CleaningService
         $mode = $stage === 'clean2' ? 'full' : 'step1';
         $csv = $this->buildCsv($collection);
 
-        $response = Http::timeout(90)
-            ->retry(2, 1500)
-            ->attach('file', $csv, 'dataset.csv')
-            ->post($this->endpoint().'?mode='.$mode);
+        // The cleaning service sleeps when idle. Waking it takes ~20s, during which
+        // it either holds the connection open or answers 5xx — so back off between
+        // attempts rather than giving up inside three seconds. throw: false keeps
+        // the raw RequestException (status code + response body) out of our errors.
+        try {
+            $response = Http::timeout(90)
+                ->connectTimeout(20)
+                ->retry(3, fn (int $attempt) => $attempt === 1 ? 2000 : 8000, throw: false)
+                ->attach('file', $csv, 'dataset.csv')
+                ->post($this->endpoint().'?mode='.$mode);
+        } catch (ConnectionException $e) {
+            throw new RuntimeException('The cleaning service could not be reached. Please try again in a minute.', previous: $e);
+        }
+
+        if ($response->serverError()) {
+            throw new RuntimeException('The cleaning service is starting up. Please try again in a minute.');
+        }
 
         if (! $response->successful()) {
             throw new RuntimeException('Cleaning service responded with status '.$response->status().'.');
