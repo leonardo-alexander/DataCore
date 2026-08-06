@@ -29,7 +29,12 @@
             this.isPlaceholder = false;
             this.open = false;
             this.$dispatch('change');
-            @if($autosubmit) this.$el.closest('form').submit(); @endif
+            @if($autosubmit)
+                // Alpine flushes :value to the hidden input on the next tick, so
+                // submitting synchronously here sent the *previous* selection — the
+                // filter appeared to do nothing because the query string never changed.
+                this.$nextTick(() => this.$el.closest('form').submit());
+            @endif
         }
     }"
     @click.outside="open = false"
