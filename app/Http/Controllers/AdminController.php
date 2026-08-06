@@ -33,7 +33,13 @@ class AdminController extends Controller
         $query = User::query()->with(['verification', 'profile'])->latest();
 
         if (in_array($filter, ['pending', 'verified', 'rejected', 'unverified'], true)) {
-            $query->whereHas('verification', fn($q) => $q->where('status', $filter));
+            // A user with no verification row at all is listed as "Unverified" in the
+            // table, so the Unverified filter has to find them too — matching only on
+            // the row's status hid every account that had never started verification.
+            $query->where(fn ($q) => $filter === 'unverified'
+                ? $q->whereHas('verification', fn ($v) => $v->where('status', 'unverified'))
+                    ->orWhereDoesntHave('verification')
+                : $q->whereHas('verification', fn ($v) => $v->where('status', $filter)));
         }
 
         if ($search) {

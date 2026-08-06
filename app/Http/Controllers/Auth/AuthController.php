@@ -76,7 +76,13 @@ class AuthController extends Controller
 
     public function redirectToGoogle()
     {
-        return Socialite::driver('google')->redirect();
+        // Without this Google silently reuses whichever account the browser is
+        // already signed into, so a second person on a shared machine lands in the
+        // first one's session with no way to choose. "select_account" forces the
+        // account chooser every time, even for a single signed-in account.
+        return Socialite::driver('google')
+            ->with(['prompt' => 'select_account'])
+            ->redirect();
     }
 
     public function handleGoogleCallback(Request $request)

@@ -155,6 +155,17 @@ it('keeps the chosen locale through the logout redirect', function () {
     $this->post('/id/logout')->assertRedirect(route('login', ['locale' => 'id']));
 });
 
+it('always asks which Google account to use', function () {
+    // Without prompt=select_account Google reuses the browser's current account
+    // silently, which on a shared machine signs the next person into the last
+    // person's session.
+    $response = $this->get('/auth/google')->assertRedirect();
+
+    parse_str(parse_url($response->headers->get('Location'), PHP_URL_QUERY), $query);
+
+    expect($query['prompt'] ?? null)->toBe('select_account');
+});
+
 it('gives a signed-out visitor no access to another session', function () {
     $user = makeUser(['email' => 'session@example.test']);
 

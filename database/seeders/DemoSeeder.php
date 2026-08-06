@@ -273,6 +273,7 @@ class DemoSeeder extends Seeder
             }
 
             $regular = $this->seedRegularUser();
+            $this->seedVerificationQueue();
             $this->seedDemoWallet($demo);
 
             $published = collect($created)->where('status', 'published')->values();
@@ -652,6 +653,37 @@ class DemoSeeder extends Seeder
                     'created_at'    => now()->subDays($i + $n + 1),
                 ]);
             }
+        }
+    }
+
+    /**
+     * Accounts sitting in each verification state, so the admin console's status
+     * filters and its approve/reject buttons have something to act on. Without
+     * these every seeded account is already verified and the queue looks broken.
+     */
+    private function seedVerificationQueue(): void
+    {
+        $people = [
+            ['Rangga Prasetyo', 'rangga@datacore.test', 'pending',  null],
+            ['Nadia Puspita',   'nadia@datacore.test',  'rejected', 'The ID photo was too blurry to read. Please re-submit in better light.'],
+        ];
+
+        foreach ($people as [$name, $email, $status, $note]) {
+            $user = User::create([
+                'name'              => $name,
+                'email'             => $email,
+                'password'          => 'password',
+                'email_verified_at' => now(),
+            ]);
+
+            Profile::create(['user_id' => $user->id, 'city' => 'Jakarta']);
+            Wallet::create(['user_id' => $user->id, 'balance' => 0]);
+            Verification::create([
+                'user_id'   => $user->id,
+                'id_number' => '31740125019900' . random_int(10, 99),
+                'status'    => $status,
+                'note'      => $note,
+            ]);
         }
     }
 
