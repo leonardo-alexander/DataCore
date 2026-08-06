@@ -33,7 +33,13 @@ class Clean1Controller extends Controller
         if ($count > config('datacore.cleaning_sync_limit')) {
             ProcessCleaning::dispatch($collection, Auth::user(), 'clean1', $lock->owner());
 
-            return back()->with('success', __('Large dataset. Clean 1 is running in the background. You will be notified when done.'));
+            // Under the sync connection there is no worker and no queue: the
+            // dispatch above already ran the clean inside this request. Saying it
+            // is "running in the background" would leave the user waiting for a
+            // notification that has in fact already been written.
+            return back()->with('success', config('queue.default') === 'sync'
+                ? __('Large dataset. Clean 1 has been processed — check your activity feed for the result.')
+                : __('Large dataset. Clean 1 is running in the background. You will be notified when done.'));
         }
 
         try {

@@ -12,6 +12,10 @@
 </head>
 
 <body class="h-full bg-white font-sans text-slate-900">
+    {{-- Without this, everything flashed towards a guest page is silently dropped:
+         "You have been signed out", a failed Google sign-in, an expired session. --}}
+    @include('partials.flash', ['showValidationErrors' => false])
+
     <div class="flex min-h-full">
         <div class="relative hidden w-1/2 overflow-hidden bg-[#0b0f1c] lg:block">
             <div class="absolute -left-20 top-10 h-96 w-96 rounded-full bg-violet-600/25 blur-3xl"></div>

@@ -6,7 +6,8 @@
     @php
         $profile = $user->profile;
         $verified = $user->isVerified();
-        $genders = ['Prefer not to say', 'Male', 'Female', 'Other'];
+        $genders = \App\Http\Requests\UpdateProfileRequest::GENDERS;
+        $maritalStatuses = \App\Http\Requests\UpdateProfileRequest::MARITAL_STATUSES;
     @endphp
 
     <div>
@@ -115,12 +116,35 @@
                             value="{{ old('dob', optional($profile?->dob)->format('Y-m-d')) }}"
                             class="w-full rounded-xl border border-slate-200 bg-white px-4 py-2.5 text-sm text-slate-900 shadow-sm transition focus:border-indigo-400 focus:outline-none focus:ring-4 focus:ring-indigo-100">
                     </div>
+                    <div>
+                        <label class="mb-1.5 block text-sm font-medium text-slate-700">City / domicile</label>
+                        <input type="text" name="city" value="{{ old('city', $profile?->city) }}" placeholder="Jakarta"
+                            class="w-full rounded-xl border border-slate-200 bg-white px-4 py-2.5 text-sm text-slate-900 placeholder:text-slate-400 shadow-sm transition focus:border-indigo-400 focus:outline-none focus:ring-4 focus:ring-indigo-100">
+                    </div>
+                    <div>
+                        <label class="mb-1.5 block text-sm font-medium text-slate-700">Profession</label>
+                        <input type="text" name="profession" value="{{ old('profession', $profile?->profession) }}" placeholder="Data Analyst"
+                            class="w-full rounded-xl border border-slate-200 bg-white px-4 py-2.5 text-sm text-slate-900 placeholder:text-slate-400 shadow-sm transition focus:border-indigo-400 focus:outline-none focus:ring-4 focus:ring-indigo-100">
+                    </div>
+                    <div>
+                        <label class="mb-1.5 block text-sm font-medium text-slate-700">Marital status</label>
+                        <x-select
+                            name="marital_status"
+                            :selected="old('marital_status', $profile?->marital_status)"
+                            placeholder="Select marital status"
+                            :options="collect($maritalStatuses)->map(fn($s) => ['value' => $s, 'label' => $s])->all()"
+                        />
+                    </div>
                     <div class="sm:col-span-2">
                         <label class="mb-1.5 block text-sm font-medium text-slate-700">Address</label>
                         <textarea name="address" rows="2" placeholder="Street, city, postal code"
                             class="w-full rounded-xl border border-slate-200 bg-white px-4 py-2.5 text-sm text-slate-900 placeholder:text-slate-400 shadow-sm transition focus:border-indigo-400 focus:outline-none focus:ring-4 focus:ring-indigo-100">{{ old('address', $profile?->address) }}</textarea>
                     </div>
                 </div>
+                <p class="mt-4 flex items-start gap-2 rounded-xl border border-slate-200 bg-slate-50/60 px-4 py-3 text-xs text-slate-500">
+                    <i data-lucide="info" class="mt-0.5 h-3.5 w-3.5 shrink-0"></i>
+                    <span>Surveys can ask to attach your age, gender, city, profession, or marital status to your entry. Only the fields a survey asks for are attached, and only if you have filled them in here.</span>
+                </p>
             </div>
 
             <div class="flex justify-end gap-3">

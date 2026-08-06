@@ -9,7 +9,9 @@
     if (session('status')) {
         $toasts[] = ['type' => 'success', 'message' => session('status')];
     }
-    if ($errors->any()) {
+    // Guest pages render validation errors inline above the form, so they opt out
+    // of the toast to avoid saying the same thing twice.
+    if (($showValidationErrors ?? true) && $errors->any()) {
         $toasts[] = [
             'type' => 'error',
             'message' =>

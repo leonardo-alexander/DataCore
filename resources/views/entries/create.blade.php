@@ -4,8 +4,10 @@
 
 @section('content')
     @php
-        $reward    = (int) $collection->reward;
-        $requested = $collection->metadata_fields ?? [];
+        $reward     = (int) $collection->reward;
+        $metaLabels = \App\Models\Collection::METADATA;
+        $onFile     = array_values(array_diff($requested, $missing));
+        $profile    = auth()->user()->profile;
     @endphp
 
     <a href="{{ route('dashboard') }}" class="inline-flex items-center gap-1.5 text-sm font-medium text-slate-500 transition hover:text-slate-900">
@@ -38,14 +40,14 @@
                         <a href="{{ route('verification.index') }}" class="mt-1 inline-block text-sm font-semibold text-amber-800 underline">Verify now</a>
                     </div>
                 </div>
-            @else
+            @elseif ($onFile)
                 <div class="mt-6 rounded-xl border border-indigo-200 bg-indigo-50/50 p-4">
                     <p class="text-sm font-medium text-slate-900">This survey will attach your verified profile:</p>
                     <div class="mt-3 grid grid-cols-2 gap-3 sm:grid-cols-3">
-                        @foreach ($requested as $metaKey)
+                        @foreach ($onFile as $metaKey)
                             <div class="rounded-lg bg-white px-3 py-2 shadow-sm">
-                                <p class="text-[11px] uppercase tracking-wide text-slate-400">{{ \App\Models\Collection::METADATA[$metaKey] ?? $metaKey }}</p>
-                                <p class="text-sm font-semibold text-slate-800">{{ auth()->user()->profile?->metadata()[$metaKey] ?? '-' }}</p>
+                                <p class="text-[11px] uppercase tracking-wide text-slate-400">{{ $metaLabels[$metaKey] ?? $metaKey }}</p>
+                                <p class="text-sm font-semibold text-slate-800">{{ $profile?->metadata()[$metaKey] ?? '-' }}</p>
                             </div>
                         @endforeach
                     </div>
@@ -56,6 +58,57 @@
 
         <form method="POST" action="{{ route('entries.store', $collection) }}" enctype="multipart/form-data" class="mt-6 space-y-5">
             @csrf
+
+            {{-- Metadata this survey asked for that the respondent's profile cannot
+                 answer yet. Collected here so the entry carries it, and saved back
+                 to the profile so it is only ever asked once. --}}
+            @if ($missing && auth()->user()->isVerified())
+                <div class="rounded-2xl border border-amber-200 bg-amber-50/60 p-5">
+                    <p class="text-sm font-semibold text-slate-900">A few details about you</p>
+                    <p class="mt-1 text-xs text-slate-500">This survey asks for these. We will save them to your profile so you only fill them in once.</p>
+
+                    <div class="mt-4 grid grid-cols-1 gap-4 sm:grid-cols-2">
+                        @foreach ($missing as $metaKey)
+                            <div @class(['sm:col-span-2' => $metaKey === 'profession'])>
+                                <label class="mb-1.5 block text-sm font-medium text-slate-700">
+                                    {{ $metaLabels[$metaKey] ?? $metaKey }} <span class="text-rose-500">*</span>
+                                </label>
+
+                                @if ($metaKey === 'age')
+                                    <input type="date" name="metadata[age]" required
+                                        max="{{ now()->subYears(17)->format('Y-m-d') }}"
+                                        value="{{ old('metadata.age') }}"
+                                        class="w-full rounded-xl border border-slate-200 bg-white px-4 py-2.5 text-sm text-slate-900 shadow-sm transition focus:border-indigo-400 focus:outline-none focus:ring-4 focus:ring-indigo-100">
+                                    <p class="mt-1 text-xs text-slate-400">Your date of birth. Only your age is attached to the entry.</p>
+
+                                @elseif ($metaKey === 'gender' || $metaKey === 'marital_status')
+                                    @php
+                                        $options = $metaKey === 'gender'
+                                            ? \App\Http\Requests\UpdateProfileRequest::GENDERS
+                                            : \App\Http\Requests\UpdateProfileRequest::MARITAL_STATUSES;
+                                    @endphp
+                                    <x-select
+                                        :name="'metadata[' . $metaKey . ']'"
+                                        :selected="old('metadata.' . $metaKey)"
+                                        :placeholder="'Select ' . strtolower($metaLabels[$metaKey] ?? $metaKey)"
+                                        :options="collect($options)->map(fn($o) => ['value' => $o, 'label' => $o])->all()"
+                                    />
+
+                                @else
+                                    <input type="text" name="metadata[{{ $metaKey }}]" required
+                                        value="{{ old('metadata.' . $metaKey) }}"
+                                        placeholder="{{ $metaKey === 'city' ? 'Jakarta' : 'Data Analyst' }}"
+                                        class="w-full rounded-xl border border-slate-200 bg-white px-4 py-2.5 text-sm text-slate-900 placeholder:text-slate-400 shadow-sm transition focus:border-indigo-400 focus:outline-none focus:ring-4 focus:ring-indigo-100">
+                                @endif
+
+                                @error('metadata.' . $metaKey)
+                                    <p class="mt-1 text-xs text-rose-500">{{ $message }}</p>
+                                @enderror
+                            </div>
+                        @endforeach
+                    </div>
+                </div>
+            @endif
 
             @foreach ($collection->questions as $index => $question)
                 <div class="rounded-2xl border border-slate-200/70 bg-white p-5 shadow-card">

@@ -25,6 +25,20 @@ class Profile extends Model
         return $this->dob ? (int) Carbon::parse($this->dob)->diffInYears(now()) : null;
     }
 
+    /**
+     * The profile column backing each metadata key a survey can request. Age is
+     * the odd one out: it is derived, so what we actually store is the birth date.
+     *
+     * @var array<string, string>
+     */
+    public const METADATA_SOURCES = [
+        'age'            => 'dob',
+        'gender'         => 'gender',
+        'city'           => 'city',
+        'profession'     => 'profession',
+        'marital_status' => 'marital_status',
+    ];
+
     public function metadata(): array
     {
         return [
@@ -34,5 +48,21 @@ class Profile extends Model
             'profession'     => $this->profession,
             'marital_status' => $this->marital_status,
         ];
+    }
+
+    /**
+     * Of the metadata a survey asked for, the keys this profile cannot answer yet.
+     * The respondent is asked for these on the survey form so the entry is not
+     * saved with the very fields the survey was created to collect left blank.
+     *
+     * @param  array<int, string>  $requested
+     * @return array<int, string>
+     */
+    public function missingMetadata(array $requested): array
+    {
+        return array_values(array_filter(
+            $requested,
+            fn ($key) => isset(self::METADATA_SOURCES[$key]) && blank($this->{self::METADATA_SOURCES[$key]}),
+        ));
     }
 }

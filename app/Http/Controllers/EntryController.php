@@ -6,6 +6,7 @@ use App\Http\Requests\StoreEntryRequest;
 use App\Models\Activity;
 use App\Models\Collection;
 use App\Models\Entry;
+use App\Models\Profile;
 use App\Models\Question;
 use App\Models\User;
 use App\Services\WalletService;
@@ -18,7 +19,14 @@ class EntryController extends Controller
     {
         $collection->load('questions');
 
-        return view('entries.create', compact('collection'));
+        /** @var User $user */
+        $user = Auth::user();
+
+        return view('entries.create', [
+            'collection' => $collection,
+            'requested'  => $collection->metadata_fields ?? [],
+            'missing'    => $user->profile?->missingMetadata($collection->metadata_fields ?? []) ?? [],
+        ]);
     }
 
     public function store(string $locale, StoreEntryRequest $request, Collection $collection, WalletService $wallet)
@@ -31,6 +39,11 @@ class EntryController extends Controller
         if ($raw->isEmpty()) {
             return back()->with('error', __('Please answer at least one question before submitting.'))->withInput();
         }
+
+        // Anything the survey asked for that the respondent supplied on the form
+        // goes onto their profile first, so the snapshot below picks it up — and
+        // so they are only ever asked for it once.
+        $this->fillProfileGaps($user, $request->validated()['metadata'] ?? []);
 
         Entry::create([
             'collection_id' => $collection->id,
@@ -91,6 +104,30 @@ class EntryController extends Controller
         }
 
         return $value === '__other__' ? $otherText : $value;
+    }
+
+    /**
+     * Write the metadata the respondent typed on the survey form onto their
+     * profile, translating each metadata key back to the column that stores it
+     * (age is held as a date of birth).
+     */
+    private function fillProfileGaps(User $user, array $metadata): void
+    {
+        $profile = $user->profile;
+
+        if (! $profile || ! $metadata) {
+            return;
+        }
+
+        $updates = collect($metadata)
+            ->filter(fn ($value) => filled($value))
+            ->mapWithKeys(fn ($value, $key) => [Profile::METADATA_SOURCES[$key] ?? $key => $value])
+            ->only(array_values(Profile::METADATA_SOURCES))
+            ->all();
+
+        if ($updates) {
+            $profile->update($updates);
+        }
     }
 
     private function snapshotMetadata(User $user, Collection $collection): array

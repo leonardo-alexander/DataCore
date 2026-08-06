@@ -23,7 +23,6 @@ use App\Http\Controllers\UploadController;
 use App\Http\Controllers\VerificationController;
 use App\Http\Controllers\WalletController;
 use App\Http\Middleware\EnsureCanRespondToSurvey;
-use App\Http\Middleware\PreventBackHistoryCache;
 use Illuminate\Support\Facades\Route;
 
 Route::get('/', [HomeController::class, 'root'])->name('home');
@@ -59,8 +58,8 @@ Route::prefix('{locale}')
             Route::get('verifications/{user}/{type}', [AdminController::class, 'document'])->name('verifications.document');
         });
 
-        // Authenticated
-        Route::middleware(['auth', PreventBackHistoryCache::class])->group(function () {
+        // Authenticated (PreventBackHistoryCache now covers the whole web group)
+        Route::middleware(['auth'])->group(function () {
             Route::post('logout', [AuthController::class, 'logout'])->name('logout');
 
             Route::get('dashboard', [DashboardController::class, 'index'])->name('dashboard');

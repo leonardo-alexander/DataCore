@@ -49,9 +49,13 @@ class Clean2Controller extends Controller
         if ($count > config('datacore.cleaning_sync_limit')) {
             ProcessCleaning::dispatch($collection, $user, 'clean2', $lock->owner());
 
-            return back()->with('success', __('Large dataset. Clean 2 is running in the background. :amount will be charged once done.', [
-                'amount' => Money::format($fee),
-            ]));
+            // See Clean1Controller: with the sync connection the dispatch above
+            // already did the work inside this request.
+            return back()->with('success', config('queue.default') === 'sync'
+                ? __('Large dataset. Clean 2 has been processed — check your activity feed for the result.')
+                : __('Large dataset. Clean 2 is running in the background. :amount will be charged once done.', [
+                    'amount' => Money::format($fee),
+                ]));
         }
 
         try {

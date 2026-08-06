@@ -45,8 +45,12 @@ services:
         value: "true"
       - key: CACHE_STORE
         value: database
+      # A real queue, so a large clean is genuinely backgrounded instead of
+      # running inside the web request and dying on the platform timeout. The
+      # worker is started by docker/entrypoint.sh alongside Apache — the free
+      # plan has no separate Background Worker service.
       - key: QUEUE_CONNECTION
-        value: sync
+        value: database
       - key: FILESYSTEM_DISK
         value: local
 

@@ -20,7 +20,12 @@ class ImportCollectionRequest extends FormRequest
             'category_id' => ['nullable', 'exists:categories,id'],
             'price'       => ['nullable', 'integer', 'min:0', 'max:' . config('datacore.max_price')],
             'reward'      => ['nullable', 'integer', 'min:0', 'max:' . config('datacore.max_price')],
-            'status'      => ['required', Rule::in(['draft', 'published'])],
+            // Draft only. A dataset that was imported a moment ago cannot have been
+            // cleaned, and publishing is meant to be gated on Half Clean — allowing
+            // "published" here let a crafted request put raw, un-stripped personal
+            // data straight into the marketplace. The import form only ever sends
+            // draft; the owner publishes from the editor after cleaning.
+            'status'      => ['required', Rule::in(['draft'])],
             'csv_file'    => ['required', 'file', 'extensions:csv,txt', 'max:10240'],
         ];
     }

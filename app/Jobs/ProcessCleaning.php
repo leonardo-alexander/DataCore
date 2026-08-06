@@ -28,12 +28,13 @@ class ProcessCleaning implements ShouldQueue
     /**
      * How long a dispatcher may hold the clean lock.
      *
-     * Deliberately short. The HTTP budget in CleaningService caps a run at ~95s,
-     * so this only needs to outlast a legitimate clean — and if the process that
-     * holds it is killed (platform request timeout, no queue worker draining the
-     * job), the lock expires on its own instead of blocking the collection.
+     * Has to outlast the longest legitimate clean, or the lock expires mid-run and
+     * a second clean can start on top of the first — which for Clean 2 means being
+     * charged twice. Kept equal to the job timeout so a killed process (platform
+     * request timeout, worker restart) still releases it instead of blocking the
+     * collection forever.
      */
-    public const LOCK_SECONDS = 180;
+    public const LOCK_SECONDS = 300;
 
     public function __construct(
         public Collection $collection,

@@ -14,6 +14,21 @@ return [
 
     'cleaning_sync_limit' => (int) env('DATACORE_CLEANING_SYNC_LIMIT', 300),
 
+    /*
+     * The cleaning service is a Hugging Face Space that sleeps when idle and
+     * answers 5xx for tens of seconds while it wakes. These control how long we
+     * are willing to wait for it. The inline budget must stay under the platform's
+     * request timeout (attempts x timeout + delays); a queue worker is not bound by
+     * a request, so it can wait for a full cold start.
+     */
+    'cleaning_timeout' => (int) env('DATACORE_CLEANING_TIMEOUT', 45),
+
+    'cleaning_attempts_inline' => (int) env('DATACORE_CLEANING_ATTEMPTS_INLINE', 2),
+
+    'cleaning_attempts_queued' => (int) env('DATACORE_CLEANING_ATTEMPTS_QUEUED', 5),
+
+    'cleaning_retry_delay' => (int) env('DATACORE_CLEANING_RETRY_DELAY', 8000),
+
     'clean2_fee' => (int) env('DATACORE_CLEAN2_FEE', 25000),
 
     'entry_reward' => (int) env('DATACORE_ENTRY_REWARD', 2000),

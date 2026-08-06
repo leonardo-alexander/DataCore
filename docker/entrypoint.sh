@@ -79,6 +79,28 @@ php artisan config:cache
 php artisan route:cache
 php artisan view:cache
 
+# Anything dispatched to a queue sits in the jobs table until something drains it.
+# Render's free plan has no separate Background Worker service, so the worker runs
+# beside Apache in this container. With QUEUE_CONNECTION=sync there is no queue to
+# drain — jobs run inline in the web request — so no worker is started.
+if [ "${QUEUE_CONNECTION:-sync}" != "sync" ]; then
+    log "Starting queue worker for the '${QUEUE_CONNECTION}' connection..."
+    (
+        while true; do
+            php artisan queue:work \
+                --queue="${QUEUE_NAME:-default}" \
+                --tries=1 \
+                --timeout="${QUEUE_TIMEOUT:-300}" \
+                --sleep=3 \
+                --max-time=3600 \
+                --no-interaction || log "Queue worker exited - restarting in 5s..."
+            sleep 5
+        done
+    ) &
+else
+    log "QUEUE_CONNECTION is 'sync' - jobs run inline in the web request, no worker started."
+fi
+
 log "DataCore is ready on port ${PORT}."
 
 exec "$@"

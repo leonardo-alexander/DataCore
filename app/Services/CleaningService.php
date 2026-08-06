@@ -46,19 +46,21 @@ class CleaningService
         $mode = $stage === 'clean2' ? 'full' : 'step1';
         $csv = $this->buildCsv($collection);
 
-        // The cleaning service sleeps when idle. Waking it takes ~20s, during which
-        // it either holds the connection open or answers 5xx — so back off between
-        // attempts rather than giving up inside three seconds. throw: false keeps
-        // the raw RequestException (status code + response body) out of our errors.
+        // The cleaning service sleeps when idle. Waking it takes tens of seconds,
+        // during which it either holds the connection open or answers 5xx — so back
+        // off and try again rather than reporting failure while it is still booting.
+        // throw: false keeps the raw RequestException (status code + response body)
+        // out of the errors we show a user.
         //
-        // The whole budget stays under 95s on purpose: QUEUE_CONNECTION is sync in
-        // production, so even the "background" clean runs inside the web request,
-        // and a request that outlives the platform's timeout returns a 502 instead
-        // of our error page. 45 + 5 + 45 covers a cold start plus one retry.
+        // The budget has to fit whatever is running the clean. A queue worker can
+        // wait minutes; an inline run cannot outlive the platform's request timeout
+        // without turning into a 502, so it gets the shorter of the two.
+        [$attempts, $delayMs] = $this->retryBudget();
+
         try {
-            $response = Http::timeout(45)
+            $response = Http::timeout((int) config('datacore.cleaning_timeout'))
                 ->connectTimeout(15)
-                ->retry(2, 5000, throw: false)
+                ->retry($attempts, $delayMs, throw: false)
                 ->attach('file', $csv, 'dataset.csv')
                 ->post($this->endpoint().'?mode='.$mode);
         } catch (ConnectionException $e) {
@@ -112,6 +114,18 @@ class CleaningService
     public function rowCount(array $payload): int
     {
         return is_array($payload['data'] ?? null) ? count($payload['data']) : 0;
+    }
+
+    /**
+     * [attempts, delay in ms] for the upload, sized to whatever is running it.
+     *
+     * @return array{0: int, 1: int}
+     */
+    private function retryBudget(): array
+    {
+        return app()->runningInConsole()
+            ? [(int) config('datacore.cleaning_attempts_queued'), (int) config('datacore.cleaning_retry_delay')]
+            : [(int) config('datacore.cleaning_attempts_inline'), (int) config('datacore.cleaning_retry_delay')];
     }
 
     private function endpoint(): string

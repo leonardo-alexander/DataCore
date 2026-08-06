@@ -28,7 +28,7 @@ class ProfileController extends Controller
         $profile = $user->profile()->firstOrCreate([]);
 
         $payload = collect($data)
-            ->only(['phone_number', 'gender', 'dob', 'address'])
+            ->only(['phone_number', 'gender', 'dob', 'address', 'city', 'profession', 'marital_status'])
             ->map(fn ($value) => $value ?: null);
 
         if ($request->hasFile('image')) {

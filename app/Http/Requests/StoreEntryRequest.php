@@ -5,6 +5,8 @@ namespace App\Http\Requests;
 use App\Models\Collection;
 use App\Models\Question;
 use Illuminate\Foundation\Http\FormRequest;
+use Illuminate\Support\Str;
+use Illuminate\Validation\Rule;
 
 class StoreEntryRequest extends FormRequest
 {
@@ -19,13 +21,13 @@ class StoreEntryRequest extends FormRequest
     {
         return $this->questions()->reduce(
             fn (array $rules, Question $question) => $rules + $this->rulesFor($question),
-            ['answers' => ['required', 'array']],
+            ['answers' => ['required', 'array']] + $this->metadataRules(),
         );
     }
 
     public function messages(): array
     {
-        return $this->questions()->reduce(function (array $messages, Question $question) {
+        $messages = $this->questions()->reduce(function (array $messages, Question $question) {
             $key = "answers.{$question->id}";
 
             return $messages + [
@@ -34,6 +36,40 @@ class StoreEntryRequest extends FormRequest
                 "{$key}.mimes"    => __('":title" is not an accepted file type.', ['title' => $question->title]),
             ];
         }, []);
+
+        return $messages + collect($this->missingMetadata())
+            ->mapWithKeys(fn (string $key) => [
+                "metadata.{$key}.required" => __('This survey needs your :field.', [
+                    'field' => Str::lower(Collection::METADATA[$key] ?? $key),
+                ]),
+            ])
+            ->all();
+    }
+
+    /**
+     * Metadata the survey asked for that the respondent's profile cannot supply.
+     * Asked for on the form itself, so the entry is never stored missing the very
+     * fields the survey was set up to collect.
+     *
+     * @return array<int, string>
+     */
+    public function missingMetadata(): array
+    {
+        return $this->user()?->profile
+            ?->missingMetadata($this->collection()->metadata_fields ?? [])
+            ?? [];
+    }
+
+    private function metadataRules(): array
+    {
+        return collect($this->missingMetadata())
+            ->mapWithKeys(fn (string $key) => ["metadata.{$key}" => match ($key) {
+                'age'            => ['required', 'date', 'before_or_equal:' . now()->subYears(17)->format('Y-m-d')],
+                'gender'         => ['required', Rule::in(UpdateProfileRequest::GENDERS)],
+                'marital_status' => ['required', Rule::in(UpdateProfileRequest::MARITAL_STATUSES)],
+                default          => ['required', 'string', 'max:255'],
+            }])
+            ->all();
     }
 
     public function withValidator($validator): void

@@ -187,9 +187,12 @@ class CollectionController extends Controller
             $feeRate   = (float) config('datacore.platform_fee_rate');
 
             // Resolve reward fields (unlocked if no escrow, locked if budget is held)
+            // Both are optional in the request, so read them defensively: a payload
+            // without respondent_target (any status but "ongoing" leaves it blank)
+            // used to raise "Undefined array key" and fail the save with a 500.
             $rewardFields = $collection->reward_budget > 0
                 ? ['reward' => $collection->reward, 'respondent_target' => $collection->respondent_target]
-                : ['reward' => (int) ($data['reward'] ?? 0), 'respondent_target' => ($data['respondent_target'] ?: null)];
+                : ['reward' => (int) ($data['reward'] ?? 0), 'respondent_target' => ($data['respondent_target'] ?? null) ?: null];
 
             // draft → ongoing: debit escrow now that the survey goes live
             if ($oldStatus === 'draft' && $newStatus === 'ongoing' && $collection->reward_budget === 0) {

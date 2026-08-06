@@ -15,7 +15,7 @@ use Tests\TestCase;
 */
 
 pest()->extend(TestCase::class)
- // ->use(RefreshDatabase::class)
+    ->use(RefreshDatabase::class)
     ->in('Feature');
 
 /*
@@ -44,7 +44,46 @@ expect()->extend('toBeOne', function () {
 |
 */
 
-function something()
+/**
+ * A user with the three records registration always creates alongside them, so a
+ * test does not have to reproduce AuthController::setUpNewAccount by hand.
+ */
+function makeUser(array $attributes = [], array $profile = [], int $balance = 0, string $verification = 'verified'): App\Models\User
 {
-    // ..
+    $user = App\Models\User::create(array_merge([
+        'name'     => 'Test User',
+        'email'    => 'user' . fake()->unique()->numberBetween(1, 999999) . '@example.test',
+        'password' => 'secret-password',
+    ], $attributes));
+
+    App\Models\Profile::create(['user_id' => $user->id] + $profile);
+    App\Models\Wallet::create(['user_id' => $user->id, 'balance' => $balance]);
+    App\Models\Verification::create(['user_id' => $user->id, 'status' => $verification]);
+
+    return $user->fresh();
+}
+
+/**
+ * A survey owned by $owner, with one short-text question unless told otherwise.
+ */
+function makeCollection(App\Models\User $owner, array $attributes = [], array $questions = ['How was it?']): App\Models\Collection
+{
+    $collection = $owner->collections()->create(array_merge([
+        'title'  => 'Survey ' . fake()->unique()->numberBetween(1, 999999),
+        'type'   => 'survey',
+        'status' => 'ongoing',
+        'price'  => 0,
+        'reward' => 0,
+    ], $attributes));
+
+    foreach (array_values($questions) as $i => $title) {
+        App\Models\Question::create([
+            'collection_id' => $collection->id,
+            'title'         => $title,
+            'type'          => 'text',
+            'position'      => $i,
+        ]);
+    }
+
+    return $collection->fresh();
 }
