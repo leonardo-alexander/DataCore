@@ -47,9 +47,11 @@
                                 <div class="absolute bottom-0 left-1/3 h-40 w-40 rounded-full bg-black/10 blur-3xl"></div>
                                 <div class="relative max-w-2xl px-5">
                                     <div class="flex items-center gap-2">
+                                        {{-- The shelf is ordered by sales, so say so once anything has sold. --}}
                                         <span
                                             class="inline-flex items-center gap-1.5 rounded-full bg-white/20 px-3 py-1 text-xs font-semibold text-white backdrop-blur">
-                                            <i data-lucide="flame" class="h-3.5 w-3.5"></i> {{ __('Featured') }}
+                                            <i data-lucide="flame" class="h-3.5 w-3.5"></i>
+                                            {{ $item->purchases_count > 0 ? ($i === 0 ? __('Most bought') : __('Popular')) : __('Featured') }}
                                         </span>
                                         @if ($item->category)
                                             <span
@@ -62,9 +64,12 @@
                                     <p class="mt-2 line-clamp-2 max-w-xl text-sm text-white/80">
                                         {{ $item->description ?: __('A refined dataset ready for analysis.') }}</p>
                                     <div class="mt-5 flex flex-wrap items-center gap-x-5 gap-y-2 text-sm text-white/90">
-                                        <span
-                                            class="inline-flex ite
-                                        ms-center gap-1.5"><i
+                                        @if ($item->purchases_count > 0)
+                                            <span class="inline-flex items-center gap-1.5 font-semibold"><i
+                                                    data-lucide="shopping-bag" class="h-4 w-4"></i>
+                                                {{ trans_choice('{1} :count purchase|[2,*] :count purchases', $item->purchases_count, ['count' => number_format($item->purchases_count)]) }}</span>
+                                        @endif
+                                        <span class="inline-flex items-center gap-1.5"><i
                                                 data-lucide="database" class="h-4 w-4"></i>
                                             {{ number_format($item->entries_count) }} {{ __('rows') }}</span>
                                         @if ($item->quality_score !== null)

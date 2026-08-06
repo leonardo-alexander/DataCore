@@ -15,6 +15,17 @@ return [
     'cleaning_sync_limit' => (int) env('DATACORE_CLEANING_SYNC_LIMIT', 300),
 
     /*
+     * Demo switch: run every clean inline, in the request, no matter how many
+     * entries there are — so the result lands on the page you are already looking
+     * at instead of arriving in the activity feed a moment later. Skips the queue
+     * entirely, so no worker has to be running.
+     *
+     * Only for demos. A large dataset cleaned this way holds the request open for
+     * the whole run and will hit the platform's request timeout.
+     */
+    'cleaning_force_sync' => filter_var(env('DATACORE_CLEANING_FORCE_SYNC', false), FILTER_VALIDATE_BOOLEAN),
+
+    /*
      * The cleaning service is a Hugging Face Space that sleeps when idle and
      * answers 5xx for tens of seconds while it wakes. These control how long we
      * are willing to wait for it. The inline budget must stay under the platform's

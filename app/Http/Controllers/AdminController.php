@@ -37,7 +37,9 @@ class AdminController extends Controller
         }
 
         if ($search) {
-            $query->where(fn($q) => $q->where('name', 'like', "%{$search}%")->orWhere('email', 'like', "%{$search}%"));
+            // Case-insensitive on every driver — see SurveyController.
+            $query->where(fn($q) => $q->whereLike('name', "%{$search}%", caseSensitive: false)
+                ->orWhereLike('email', "%{$search}%", caseSensitive: false));
         }
 
         $users = $query->paginate(8)->withQueryString();

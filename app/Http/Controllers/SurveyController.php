@@ -31,7 +31,10 @@ class SurveyController extends Controller
         }
 
         if ($search = $request->query('q')) {
-            $query->where('title', 'like', "%{$search}%");
+            // whereLike, not a raw "like": Postgres LIKE is case-sensitive, so on the
+            // deployed database a plain LIKE found nothing unless the search matched
+            // the title's capitalisation exactly. SQLite hid this in development.
+            $query->whereLike('title', "%{$search}%", caseSensitive: false);
         }
 
         $sort = in_array($request->query('sort'), ['date', 'reward', 'responses'])

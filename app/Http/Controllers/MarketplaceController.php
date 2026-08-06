@@ -13,21 +13,20 @@ class MarketplaceController extends Controller
     {
         $categories = Category::orderBy('name')->get();
 
+        // The carousel is a "most bought" shelf: sales first, then the datasets
+        // people engaged with, then the newest. Every term is a count or a
+        // timestamp — never a nullable column — because DESC puts NULLs first on
+        // Postgres and last on SQLite, which would have ordered the shelf
+        // differently in production than in development. A marketplace where
+        // nothing has sold yet still fills up, from the tie-breakers down.
         $featured = Collection::published()
             ->with(['user', 'category'])
-            ->withCount(['entries', 'reviews'])
-            ->latest('quality_score')
+            ->withCount(['entries', 'reviews', 'purchases'])
+            ->orderByDesc('purchases_count')
+            ->orderByDesc('reviews_count')
+            ->latest()
             ->take(6)
             ->get();
-
-        if ($featured->isEmpty()) {
-            $featured = Collection::published()
-                ->with(['user', 'category'])
-                ->withCount(['entries', 'reviews'])
-                ->latest()
-                ->take(6)
-                ->get();
-        }
 
         $query = Collection::published()
             ->with(['user', 'category'])
@@ -39,7 +38,8 @@ class MarketplaceController extends Controller
         }
 
         if ($search = $request->query('q')) {
-            $query->where('title', 'like', "%{$search}%");
+            // Case-insensitive on every driver — see SurveyController.
+            $query->whereLike('title', "%{$search}%", caseSensitive: false);
         }
 
         $sort = in_array($request->query('sort'), ['date', 'price', 'rating', 'reviews'])

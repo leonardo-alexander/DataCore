@@ -52,6 +52,17 @@ class ProcessCleaning implements ShouldQueue
         return 'cleaning:'.$collection->id;
     }
 
+    /**
+     * Whether a clean over this many entries should be handed to a worker rather
+     * than run inside the request. The demo switch forces everything inline, so
+     * the outcome is flashed onto the page instead of landing in the activity feed.
+     */
+    public static function shouldQueue(int $entryCount): bool
+    {
+        return ! config('datacore.cleaning_force_sync')
+            && $entryCount > (int) config('datacore.cleaning_sync_limit');
+    }
+
     public function handle(CleaningService $cleaning, WalletService $wallet): void
     {
         try {

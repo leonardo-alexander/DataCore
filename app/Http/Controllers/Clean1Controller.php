@@ -30,7 +30,7 @@ class Clean1Controller extends Controller
             return back()->with('error', __('A clean is already running for this collection. Please wait for it to finish.'));
         }
 
-        if ($count > config('datacore.cleaning_sync_limit')) {
+        if (ProcessCleaning::shouldQueue($count)) {
             ProcessCleaning::dispatch($collection, Auth::user(), 'clean1', $lock->owner());
 
             // Under the sync connection there is no worker and no queue: the

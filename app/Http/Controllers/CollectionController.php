@@ -44,7 +44,8 @@ class CollectionController extends Controller
         };
 
         if ($search !== '') {
-            $query->where('title', 'like', '%' . $search . '%');
+            // Case-insensitive on every driver — see SurveyController.
+            $query->whereLike('title', '%' . $search . '%', caseSensitive: false);
         }
 
         if ($status !== '') {

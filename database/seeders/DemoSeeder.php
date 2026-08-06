@@ -274,7 +274,19 @@ class DemoSeeder extends Seeder
 
             $regular = $this->seedRegularUser();
             $this->seedDemoWallet($demo);
-            $this->seedDemoPurchase($demo, $created[2]);
+
+            $published = collect($created)->where('status', 'published')->values();
+
+            // The demo account's own purchase, shown on its Purchases page. Both
+            // conditions match what the app itself enforces: the dataset has to be
+            // published (an ongoing survey is not on sale) and it cannot be one the
+            // demo account owns — PurchaseController refuses both.
+            $this->seedDemoPurchase($demo, $published->firstWhere('user_id', '!=', $demo->id));
+
+            // A spread of sales across the shelf, so the marketplace carousel — which
+            // ranks by copies sold — has something to actually rank.
+            $this->seedMarketplaceSales($published, [...$sellers, $demo, $regular]);
+
             $this->seedRegularWallet($regular);
         });
     }
@@ -589,6 +601,58 @@ class DemoSeeder extends Seeder
         ]);
 
         Activity::create(['user_id' => $demo->id, 'type' => 'purchase', 'title' => 'Dataset purchased', 'description' => 'You purchased ' . $collection->title . '.', 'is_read' => false]);
+    }
+
+    /**
+     * Give the published datasets a descending number of buyers, so the "most
+     * bought" carousel has a visible ranking on a fresh install instead of every
+     * dataset tying at zero sales.
+     *
+     * Sticks to what the app itself would allow: nobody buys their own dataset,
+     * and nobody buys the same one twice.
+     *
+     * @param  \Illuminate\Support\Collection<int, Collection>  $published
+     * @param  array<int, User>  $buyers
+     */
+    private function seedMarketplaceSales(\Illuminate\Support\Collection $published, array $buyers): void
+    {
+        $salesPerDataset = [4, 3, 2, 1];
+
+        foreach ($published->values() as $i => $collection) {
+            $wanted = $salesPerDataset[$i] ?? 0;
+
+            if ($wanted === 0) {
+                continue;
+            }
+
+            $eligible = collect($buyers)
+                ->reject(fn (User $buyer) => $buyer->id === $collection->user_id)
+                ->reject(fn (User $buyer) => Purchase::where('collection_id', $collection->id)
+                    ->where('user_id', $buyer->id)
+                    ->exists())
+                ->take($wanted);
+
+            foreach ($eligible as $n => $buyer) {
+                Purchase::create([
+                    'collection_id' => $collection->id,
+                    'user_id'       => $buyer->id,
+                    'amount'        => $collection->price,
+                    'created_at'    => now()->subDays($i + $n + 1),
+                ]);
+
+                Transaction::create([
+                    'user_id'       => $buyer->id,
+                    'collection_id' => $collection->id,
+                    'reference'     => 'TXN-' . strtoupper(Str::random(8)),
+                    'type'          => 'payment',
+                    'direction'     => 'debit',
+                    'amount'        => $collection->price,
+                    'status'        => 'success',
+                    'description'   => 'Purchased ' . $collection->title,
+                    'created_at'    => now()->subDays($i + $n + 1),
+                ]);
+            }
+        }
     }
 
     private function seedRegularUser(): User
