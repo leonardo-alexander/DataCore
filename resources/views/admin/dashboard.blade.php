@@ -97,7 +97,11 @@
     </div>
 
     {{-- User Table --}}
-    <div class="mt-6 overflow-hidden rounded-2xl border border-slate-200/70 bg-white shadow-card">
+    {{-- No overflow-hidden here: the status filter's dropdown is absolutely
+         positioned inside the header below, and an ancestor that clips its
+         overflow cuts the list off at the card's edge no matter how high its
+         z-index is. The table clips its own corners instead. --}}
+    <div class="mt-6 rounded-2xl border border-slate-200/70 bg-white shadow-card">
         <div class="flex flex-wrap items-center justify-between gap-3 px-6 py-4">
             <div>
                 <h2 class="font-display text-lg font-semibold text-slate-900">{{ __('Users') }}</h2>
@@ -128,7 +132,8 @@
             </form>
         </div>
 
-        <div class="overflow-x-auto">
+        {{-- Rounds its own bottom corners now that the card no longer clips. --}}
+        <div class="overflow-x-auto {{ $users->hasPages() ? '' : 'rounded-b-2xl' }}">
             <table class="w-full min-w-2xl table-fixed text-sm">
                 <thead>
                     <tr class="border-y border-slate-100 bg-slate-50/60 text-[11px] uppercase tracking-wide text-slate-400">
