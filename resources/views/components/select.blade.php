@@ -28,19 +28,19 @@
             this.label = opt.label;
             this.isPlaceholder = false;
             this.open = false;
+            this.$refs.field.value = opt.value;
             this.$dispatch('change');
-            @if($autosubmit)
-                // Alpine flushes :value to the hidden input on the next tick, so
-                // submitting synchronously here sent the *previous* selection — the
-                // filter appeared to do nothing because the query string never changed.
-                this.$nextTick(() => this.$el.closest('form').submit());
-            @endif
+            @if($autosubmit) this.$refs.field.form?.submit(); @endif
         }
     }"
     @click.outside="open = false"
     {{ $attributes->class(['relative w-full']) }}
 >
-    <input type="hidden" name="{{ $name }}" :value="value">
+    {{-- The value is written straight to this node in select(), not left to the
+         :value binding: Alpine flushes bindings on the next tick, so an autosubmit
+         fired in the same call submitted the previous selection and the filter
+         looked like it did nothing. --}}
+    <input type="hidden" name="{{ $name }}" x-ref="field" value="{{ $sel }}">
 
     <button
         type="button"
